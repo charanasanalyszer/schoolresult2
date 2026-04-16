@@ -1,0 +1,2028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Charanas Analyzer — School Exam Management System</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <!-- Exam Builder dependencies -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script>
+    window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']] }, svg: { fontCache:'global' } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" defer></script>
+</head>
+<body>
+
+<!-- ═══════════════ LOGIN ═══════════════ -->
+
+<!-- ══ DUAL PORTAL LANDING ══ -->
+<div id="dualPortal" class="login-screen" style="display:flex">
+  <div class="login-shapes"><div class="ls ls1"></div><div class="ls ls2"></div><div class="ls ls3"></div></div>
+  <div style="position:relative;z-index:2;width:100%;max-width:860px;margin:0 auto;padding:2rem 1.5rem;display:flex;flex-direction:column;align-items:center;gap:2rem">
+    <!-- Brand -->
+    <div style="text-align:center">
+      <div style="display:inline-flex;align-items:center;gap:.75rem;margin-bottom:.5rem">
+        <div class="login-logo" style="background:linear-gradient(135deg,#7c3aed,#1a6fb5);width:3rem;height:3rem;font-size:1rem">CA</div>
+        <h1 style="font-size:1.8rem;font-weight:800;color:#0f172a;margin:0">Charanas <span style="color:#1a6fb5">Analyzer</span></h1>
+      </div>
+      <p style="color:#64748b;font-size:.88rem;margin:0">School Exam Management System — choose your portal to continue</p>
+    </div>
+    <!-- Two cards -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;width:100%">
+      <!-- School Portal -->
+      <div class="card" style="padding:2rem;text-align:center;cursor:pointer;border:2px solid transparent;transition:border .2s,box-shadow .2s;border-radius:16px" onclick="showSchoolDirectLogin()" onmouseenter="this.style.borderColor='#1a6fb5';this.style.boxShadow='0 8px 32px rgba(26,111,181,.15)'" onmouseleave="this.style.borderColor='transparent';this.style.boxShadow=''">
+        <div style="font-size:2.8rem;margin-bottom:.75rem">🏫</div>
+        <h2 style="font-size:1.15rem;font-weight:800;color:#0f172a;margin:0 0 .5rem">School Portal</h2>
+        <p style="font-size:.82rem;color:#64748b;margin:0 0 1.5rem;line-height:1.5">Sign in as a teacher, admin or staff member of your school</p>
+        <button class="btn btn-primary btn-full" style="pointer-events:none">Enter School →</button>
+      </div>
+      <!-- Platform Portal -->
+      <div class="card" style="padding:2rem;text-align:center;cursor:pointer;border:2px solid transparent;transition:border .2s,box-shadow .2s;border-radius:16px" onclick="showPlatformLogin()" onmouseenter="this.style.borderColor='#7c3aed';this.style.boxShadow='0 8px 32px rgba(124,58,237,.15)'" onmouseleave="this.style.borderColor='transparent';this.style.boxShadow=''">
+        <div style="font-size:2.8rem;margin-bottom:.75rem">⚙️</div>
+        <h2 style="font-size:1.15rem;font-weight:800;color:#0f172a;margin:0 0 .5rem">Platform Admin</h2>
+        <p style="font-size:.82rem;color:#64748b;margin:0 0 1.5rem;line-height:1.5">Manage school accounts, system settings and platform configuration</p>
+        <button class="btn btn-full" style="pointer-events:none;background:linear-gradient(135deg,#7c3aed,#1a6fb5);color:#fff;border:none">Enter Platform →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PLATFORM LOGIN ══ -->
+<div id="platformLogin" class="login-screen" style="display:none">
+  <div class="login-shapes"><div class="ls ls1"></div><div class="ls ls2"></div><div class="ls ls3"></div></div>
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-logo" style="background:linear-gradient(135deg,#7c3aed,#1a6fb5)">CA</div>
+      <div>
+        <h1>Charanas <span>Analyzer</span></h1>
+        <p id="plSubtitle" style="font-size:.8rem;color:#64748b;margin-top:.15rem">Platform Administration</p>
+      </div>
+    </div>
+    <button class="btn btn-outline btn-sm" style="margin-bottom:1rem;font-size:.78rem;width:100%" onclick="showDualPortal()">← Back to Portal</button>
+    <h2 id="plTitle" style="font-size:1.1rem;font-weight:700;margin-bottom:.5rem;color:#0f172a">Sign In</h2>
+    <div id="plFirstTimeNote" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:.65rem .85rem;font-size:.78rem;color:#1e40af;margin-bottom:1rem">
+      🆕 <strong>First time?</strong> Enter a username and password to create your platform admin account.
+    </div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="plUser" placeholder="Platform username" autocomplete="username"/>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="plPass" placeholder="Platform password" autocomplete="current-password"/>
+        <button type="button" class="pw-toggle" onclick="document.getElementById('plPass').type=document.getElementById('plPass').type==='password'?'text':'password'">👁</button>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" id="plBtn" onclick="doPlatformLogin()">Sign In →</button>
+    <div id="plErr" class="login-err" style="display:none"></div>
+    <div style="margin-top:1rem;text-align:center">
+      <button class="btn btn-outline btn-sm" style="font-size:.72rem;color:#94a3b8;border-color:#e2e8f0" onclick="resetPlatformAccount()">🔑 Forgot / Reset Platform Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCHOOL SELECTOR ══ -->
+<div id="schoolSelector" class="login-screen" style="display:none;align-items:flex-start;padding-top:2.5rem;overflow-y:auto">
+  <div class="login-shapes"><div class="ls ls1"></div><div class="ls ls2"></div><div class="ls ls3"></div></div>
+  <div style="width:100%;max-width:960px;margin:0 auto;padding:0 1.5rem 3rem;position:relative;z-index:2">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:1rem">
+      <div>
+        <h2 style="font-size:1.4rem;font-weight:800;color:#0f172a;margin:0">🏫 Platform Admin Dashboard</h2>
+        <p style="font-size:.82rem;color:#64748b;margin:.25rem 0 0">Click any school below to manage it</p>
+      </div>
+      <button id="selectorBackBtn" class="btn btn-outline btn-sm" onclick="showDualPortal()">← Back</button>
+    </div>
+    <!-- Platform Summary (admin only) -->
+    <div id="platformSummaryPanel" style="display:none;margin-bottom:2rem">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1rem">
+        <span style="font-size:1rem;font-weight:700;color:#0f172a">📊 Platform Summary</span>
+        <span style="font-size:.75rem;color:#64748b;font-weight:400">All schools at a glance</span>
+      </div>
+      <!-- KPI row -->
+      <div id="platformKpiRow" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem;margin-bottom:1.25rem"></div>
+      <!-- Per-school table -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:.75rem 1rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:.8rem;font-weight:700;color:#475569">Schools Overview</div>
+        <div id="platformSchoolTable" style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:.8rem">
+            <thead>
+              <tr style="background:#f1f5f9">
+                <th style="padding:.55rem 1rem;text-align:left;color:#64748b;font-weight:600">School</th>
+                <th style="padding:.55rem .75rem;text-align:center;color:#64748b;font-weight:600">Students</th>
+                <th style="padding:.55rem .75rem;text-align:center;color:#64748b;font-weight:600">Exams</th>
+                <th style="padding:.55rem .75rem;text-align:center;color:#64748b;font-weight:600">Subjects</th>
+                <th style="padding:.55rem .75rem;text-align:center;color:#64748b;font-weight:600">Avg Score</th>
+                <th style="padding:.55rem .75rem;text-align:center;color:#64748b;font-weight:600">Top Exam</th>
+                <th style="padding:.55rem 1rem;text-align:center;color:#64748b;font-weight:600">Joined</th>
+              </tr>
+            </thead>
+            <tbody id="platformSchoolTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Exam breakdown per school -->
+      <div id="platformExamBreakdown" style="margin-top:1.25rem"></div>
+    </div>
+
+    <div id="schoolGrid" class="school-grid"></div>
+    <!-- Add school (platform admin only) -->
+    <div id="addSchoolPanel" style="display:none;margin-top:2rem">
+      <div class="card" style="max-width:640px">
+        <h3 style="margin-bottom:1rem">➕ Create New School Account</h3>
+        <div class="frow c2" style="margin-bottom:.75rem">
+          <div class="fg"><label>School Name *</label><input type="text" id="psName" placeholder="e.g. Sunrise Academy"/></div>
+          <div class="fg"><label>Login Username *</label><input type="text" id="psUser" placeholder="e.g. sunrise"/></div>
+          <div class="fg"><label>Password *</label><input type="password" id="psPass" placeholder="Strong password"/></div>
+          <div class="fg"><label>Email</label><input type="email" id="psEmail" placeholder="info@school.ke"/></div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="addSchoolAccount()">➕ Create School Account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCHOOL LOGIN ══ -->
+<div id="loginScreen" class="login-screen" style="display:none">
+  <div class="login-shapes"><div class="ls ls1"></div><div class="ls ls2"></div><div class="ls ls3"></div></div>
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-logo">CA</div>
+      <div>
+        <h1>Charanas <span>Analyzer</span></h1>
+        <p id="schoolLoginLabel" style="font-size:.82rem;font-weight:600;color:#1a6fb5;margin-top:.15rem">School Login</p>
+      </div>
+    </div>
+    <button class="btn btn-outline btn-sm" style="margin-bottom:1rem;font-size:.78rem;width:100%" onclick="showDualPortal()">← Back to Portal</button>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="lUser" placeholder="Enter username" autocomplete="username"/>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="lPass" placeholder="Enter password" autocomplete="current-password"/>
+        <button type="button" class="pw-toggle" onclick="togglePw()">👁</button>
+      </div>
+    </div>
+    <div class="login-role-hint"><strong>Super Admin:</strong> superadmin / super123</div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()">Sign In →</button>
+    <div id="loginErr" class="login-err" style="display:none">❌ Invalid credentials. Check and retry.</div>
+  </div>
+</div>
+
+<!-- ═══════════════ APP ═══════════════ -->
+<div id="app" style="display:none">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-head">
+      <div class="sb-logo">CA<span></span></div>
+      <button class="sb-close" onclick="closeSidebar()">✕</button>
+    </div>
+    <div class="sb-school-name" id="sbSchoolName">School Name</div>
+    <nav class="sb-nav">
+      <!-- 1. Dashboard -->
+      <a class="sn active" data-s="dashboard" onclick="go('dashboard',this)"><i>🏠</i><span>Dashboard</span></a>
+
+      <div class="sb-section-lbl">Setup</div>
+      <!-- 2. Subjects — must exist before classes or exams -->
+      <a class="sn" data-s="subjects"    onclick="go('subjects',this)"><i>📚</i><span>Subjects</span></a>
+      <!-- 3. Classes & Streams — needed before students/exams -->
+      <a class="sn" data-s="classes"     onclick="go('classes',this)"><i>🏫</i><span>Classes &amp; Streams</span></a>
+      <!-- 4. Teachers — set up before assigning -->
+      <a class="sn" data-s="teachers"    onclick="go('teachers',this)"><i>👨‍🏫</i><span>Teachers</span></a>
+      <!-- 5. Students — enrol after classes exist -->
+      <a class="sn" data-s="students"    onclick="go('students',this)"><i>🎓</i><span>Students</span></a>
+
+      <div class="sb-section-lbl">Academics</div>
+      <!-- 6. Timetables — schedule before exams -->
+      <a class="sn" data-s="timetable"   onclick="go('timetable',this)"><i>🕐</i><span>Timetables</span></a>
+      <!-- 7. Exam Builder — build paper before running exam -->
+      <a class="sn" data-s="exambuilder" onclick="go('exambuilder',this)" id="examBuilderNavLink"><i>✏️</i><span>Exam Builder</span></a>
+      <!-- 8. Exams — run & enter marks -->
+      <a class="sn" data-s="exams"       onclick="go('exams',this)"><i>📝</i><span>Exams</span></a>
+      <!-- 9. Report Forms — generate after marks entered -->
+      <a class="sn" data-s="reports"     onclick="go('reports',this)"><i>📄</i><span>Report Forms</span></a>
+      <!-- 10. Papers & Resources -->
+      <a class="sn" data-s="papers"      onclick="go('papers',this)" id="papersNavLink"><i>📂</i><span>Papers &amp; Resources</span></a>
+
+      <div class="sb-section-lbl">Administration</div>
+      <!-- 11. Fees -->
+      <a class="sn" data-s="fees"        onclick="go('fees',this)" id="feesNavLink"><i>💰</i><span>Fees</span></a>
+      <!-- 12. Messaging -->
+      <a class="sn" data-s="messaging"   onclick="go('messaging',this)"><i>💬</i><span>Messaging</span></a>
+      <!-- 13. Settings -->
+      <a class="sn" data-s="settings"    onclick="go('settings',this)"><i>🛠️</i><span>Settings</span></a>
+    </nav>
+    <div class="sb-foot">
+      <button class="sn" onclick="toggleDark()"><i id="dmIco">🌙</i><span id="dmLbl">Dark Mode</span></button>
+      <button class="sn" onclick="doLogout()"><i>🚪</i><span>Logout</span></button>
+    </div>
+  </aside>
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <button class="menu-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
+    <div class="tb-title" id="tbTitle">Dashboard</div>
+    <div class="tb-right">
+      <div class="lang-selector">
+        <button class="lang-btn active" id="langEN" onclick="setLang('en')" title="English">🇬🇧 EN</button>
+        <button class="lang-btn" id="langSW" onclick="setLang('sw')" title="Kiswahili">🇰🇪 SW</button>
+      </div>
+      <button class="tb" onclick="showDualPortal()" title="Switch school" style="font-size:.76rem">🏫 Switch School</button>
+      <div class="tb-user" id="tbUser">👤 Super Admin</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <main class="main" id="mainContent">
+
+    <!-- ════ DASHBOARD ════ -->
+    <section id="s-dashboard" class="sec active">
+      <div class="ph">
+        <h2>Good morning! 👋</h2>
+        <p>Here's your school's academic overview.</p>
+      </div>
+      <div class="stat-row" id="dashStats"></div>
+      <div class="quick-cards">
+        <div class="qcard blue" onclick="go('exams',document.querySelector('[data-s=exams]'));openExamTab('tabCreateExam')">
+          <div class="qc-icon">📝</div><div class="qc-label">Create Exam</div>
+        </div>
+        <div class="qcard green" onclick="go('exams',document.querySelector('[data-s=exams]'));openExamTab('tabUploadMarks')">
+          <div class="qc-icon">⬆</div><div class="qc-label">Upload Marks</div>
+        </div>
+        <div class="qcard teal" onclick="go('reports',document.querySelector('[data-s=reports]'))">
+          <div class="qc-icon">📄</div><div class="qc-label">Generate Reports</div>
+        </div>
+        <div class="qcard amber" onclick="go('students',document.querySelector('[data-s=students]'))">
+          <div class="qc-icon">🎓</div><div class="qc-label">Manage Students</div>
+        </div>
+      </div>
+      <div class="dash-charts dash-charts-3">
+        <div class="chart-box chart-span2">
+          <h3>📊 Subject Performance (Latest Exam)</h3>
+          <div style="position:relative;height:210px;width:100%"><canvas id="dashSubChart"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <h3>⚧ Gender Distribution</h3>
+          <div style="position:relative;height:210px;width:100%"><canvas id="dashGenderChart"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <h3>🎯 Grade Distribution</h3>
+          <div style="position:relative;height:210px;width:100%"><canvas id="dashGradeChart"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <h3>🏆 Top 5 Students</h3>
+          <div id="dashTop5"></div>
+        </div>
+        <div class="chart-box">
+          <h3>📈 Recent Exams</h3>
+          <div id="dashRecentExams"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ EXAMS ════ -->
+    <section id="s-exams" class="sec">
+      <div class="ph">
+        <h2>📝 Exams</h2>
+        <p>Create, manage, upload marks, and analyse examinations.</p>
+      </div>
+      <div class="tab-bar" id="examTabBar">
+        <button class="tb active" onclick="openExamTab('tabCreateExam',this)">Create Exam</button>
+        <button class="tb" onclick="openExamTab('tabExamList',this)">Exam List</button>
+        <button class="tb" onclick="openExamTab('tabUploadMarks',this)">Upload Marks</button>
+        <button class="tb" onclick="openExamTab('tabAnalyse',this)" id="tbAnalyse">Analyse</button>
+        <button class="tb" onclick="openExamTab('tabMeritList',this)">Merit List</button>
+        <button class="tb" onclick="openExamTab('tabSubjectAnalysis',this)" id="tbSubjectAnalysis">Subject Analysis</button>
+      </div>
+
+      <!-- Create Exam -->
+      <div id="tabCreateExam" class="tab-panel active">
+        <div class="card">
+          <h3 id="examFormTitle">➕ Create New Exam</h3>
+          <input type="hidden" id="editExamId"/>
+
+          <!-- Exam Category Selector -->
+          <div class="exam-category-row">
+            <label class="exam-cat-label">Exam Category *</label>
+            <div class="exam-cat-btns">
+              <button type="button" id="catBtnRegular" class="exam-cat-btn active" onclick="setExamCategory('regular')">
+                <span class="ecat-icon">📋</span>
+                <span class="ecat-title">Regular Exam</span>
+                <span class="ecat-desc">Opener, Mid-Term or End-Term</span>
+              </button>
+              <button type="button" id="catBtnConsolidated" class="exam-cat-btn" onclick="setExamCategory('consolidated')">
+                <span class="ecat-icon">📊</span>
+                <span class="ecat-title">Consolidated Exam</span>
+                <span class="ecat-desc">Combined results from multiple exams in a term/year</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="frow c3">
+            <div class="fg"><label>Exam Name *</label><input type="text" id="examName" placeholder="e.g. Term 1 Mid-Term Exam"/></div>
+            <div class="fg" id="examTypeWrap"><label>Exam Type *</label>
+              <select id="examType">
+                <option value="">— Select Type —</option>
+                <option>Opener</option><option>Mid-Term</option><option>End-Term</option>
+              </select>
+            </div>
+            <div class="fg" id="examConsolidatedWrap" style="display:none"><label>Scope</label>
+              <select id="examConsolidatedScope">
+                <option value="term">Term Consolidated</option>
+                <option value="year">Year Consolidated</option>
+              </select>
+            </div>
+            <div class="fg"><label>Term</label>
+              <select id="examTerm"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select>
+            </div>
+          </div>
+          <div class="frow c3">
+            <div class="fg"><label>Year</label><input type="number" id="examYear" placeholder="2025" value="2025"/></div>
+            <div class="fg"><label>Exam Date</label><input type="date" id="examDate"/></div>
+            <div class="fg"><label>Class</label>
+              <select id="examClass"><option value="">— All Classes —</option></select>
+            </div>
+          </div>
+
+          <!-- Source exams picker (Consolidated only) -->
+          <div id="consolidatedSourceWrap" style="display:none;margin-bottom:1rem">
+            <label style="font-size:.82rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.5rem">Source Exams (select the regular exams to consolidate)</label>
+            <div id="consolidatedSourceCheckboxes" class="sub-checkboxes-wrap"></div>
+          </div>
+
+          <!-- Subject checkboxes -->
+          <div class="fg" style="margin-bottom:1rem">
+            <label style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;flex-wrap:wrap">
+              Subjects *
+              <label class="check-label" style="font-weight:400;text-transform:none;font-size:.82rem">
+                <input type="checkbox" id="examSelectAllSubjects" onchange="toggleExamAllSubjects(this)"/> Check All
+              </label>
+            </label>
+            <div id="examSubjectCheckboxes" class="sub-checkboxes-wrap"></div>
+          </div>
+
+          <div class="fg" style="margin-bottom:1rem">
+            <label>Notes / Description</label>
+            <textarea id="examNotes" rows="3" placeholder="Optional notes..."></textarea>
+          </div>
+          <div class="btn-row-compact">
+            <button class="btn btn-primary btn-sm" onclick="saveExam()">💾 Save</button>
+            <button class="btn btn-outline btn-sm" onclick="cancelExamEdit()">✕ Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Exam List -->
+      <div id="tabExamList" class="tab-panel">
+        <div class="card">
+          <div class="ctbar">
+            <h3>All Exams</h3>
+            <div class="search-box"><span>🔍</span><input type="text" placeholder="Search exams..." oninput="filterTbl('examListTbl',this.value)"/></div>
+          </div>
+          <div class="tbl-wrap">
+            <table id="examListTbl">
+              <thead><tr><th onclick="sortTable('examListBody',0,'num')" class="sortable-th"># <span class="sort-ico">⇅</span></th><th onclick="sortTable('examListBody',1,'str')" class="sortable-th">Name <span class="sort-ico">⇅</span></th><th onclick="sortTable('examListBody',2,'str')" class="sortable-th">Category <span class="sort-ico">⇅</span></th><th onclick="sortTable('examListBody',3,'str')" class="sortable-th">Type <span class="sort-ico">⇅</span></th><th onclick="sortTable('examListBody',4,'str')" class="sortable-th">Term <span class="sort-ico">⇅</span></th><th onclick="sortTable('examListBody',5,'num')" class="sortable-th">Year <span class="sort-ico">⇅</span></th><th onclick="sortTable('examListBody',6,'str')" class="sortable-th">Class <span class="sort-ico">⇅</span></th><th>Subjects</th><th onclick="sortTable('examListBody',8,'str')" class="sortable-th">Date <span class="sort-ico">⇅</span></th><th>Actions</th></tr></thead>
+              <tbody id="examListBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload Marks -->
+      <div id="tabUploadMarks" class="tab-panel">
+        <div class="card" style="margin-bottom:1.25rem">
+          <h3>⚙ Select Exam & Subject</h3>
+          <div class="frow c3" style="margin-bottom:.75rem">
+            <div class="fg"><label>Select Exam *</label>
+              <select id="umExam" onchange="loadUmClasses()"><option value="">— Choose Exam —</option></select>
+            </div>
+            <div class="fg"><label>Class *</label>
+              <select id="umClass" onchange="loadUmStreams()"><option value="">— Choose Class —</option></select>
+            </div>
+            <div class="fg"><label>Stream *</label>
+              <select id="umStream" onchange="loadUmSubjects()"><option value="">— Choose Stream —</option></select>
+            </div>
+          </div>
+          <div class="frow c3">
+            <div class="fg"><label>Select Subject *</label>
+              <select id="umSubject" onchange="loadUmStudents()"><option value="">— Choose Subject —</option></select>
+            </div>
+            <div class="fg"><label>Entry Mode</label>
+              <select id="umMode">
+                <option value="manual">Manual Entry</option>
+                <option value="excel">Upload Excel/CSV</option>
+              </select>
+            </div>
+            <div class="fg"></div>
+          </div>
+        </div>
+
+        <!-- Excel upload -->
+        <div class="card" id="umExcelCard" style="display:none;margin-bottom:1.25rem">
+          <h3>⬆ Upload Excel / CSV</h3>
+          <div class="tab-bar" style="margin-bottom:1rem;border-bottom:1px solid var(--border-lt)">
+            <span style="font-size:.82rem;color:var(--muted);padding:.5rem 0;font-weight:600">Upload mode:</span>
+            <button class="tb active" id="umModeSingle" onclick="setUmUploadMode('single',this)">Single Subject</button>
+            <button class="tb" id="umModeAll" onclick="setUmUploadMode('all',this)">All Subjects at Once</button>
+          </div>
+          <div id="umSingleHint" style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem">📄 File columns: <strong>AdmNo, Name, Marks</strong> — uploads marks for the selected subject above.</div>
+          <div id="umAllHint" style="display:none;font-size:.8rem;color:var(--muted);margin-bottom:.75rem">📊 File columns: <strong>AdmNo, Name, [ENG], [KIS], [MTH]…</strong> — use subject codes or full names as column headers to upload all subjects at once.</div>
+          <div class="upload-zone" onclick="document.getElementById('marksFile').click()" id="marksUploadZone">
+            <div class="uz-icon">📊</div>
+            <h4>Click or drag file here</h4>
+            <p>Supported: .xlsx, .xls, .csv</p>
+            <input type="file" id="marksFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleMarksUpload(this)"/>
+          </div>
+          <div style="display:flex;gap:.75rem;margin-top:.75rem;flex-wrap:wrap">
+            <button class="btn btn-outline" id="umDownloadSingle" onclick="downloadMarksTemplate()">⬇ Single-Subject Template</button>
+            <button class="btn btn-outline" id="umDownloadAll" onclick="downloadAllSubjectsTemplate()">⬇ All-Subjects Template</button>
+          </div>
+        </div>
+
+        <!-- Manual entry table -->
+        <div class="card" id="umManualCard">
+          <div class="ctbar">
+            <h3>✏️ Enter Marks <span id="umSubjectLabel" style="color:var(--primary);font-size:.85rem"></span></h3>
+            <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+              <button class="btn btn-outline btn-sm" onclick="saveAllMarks()">💾 Save All</button>
+              <button class="btn btn-outline btn-sm" onclick="exportMarksExcel()">⬇ Excel</button>
+            </div>
+          </div>
+          <p style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem">💡 Press <kbd>Enter</kbd> or <kbd>Tab</kbd> to move to next student. Marks auto-save as you type.</p>
+          <div class="tbl-wrap">
+            <table id="umTable">
+              <thead><tr><th>#</th><th>Adm No</th><th>Student Name</th><th>Gender</th><th>Stream</th><th>Marks <span id="umMaxLabel"></span></th><th class="um-grade-col">Grade</th><th class="um-points-col">Points</th></tr></thead>
+              <tbody id="umBody"></tbody>
+            </table>
+          </div>
+          <div id="umEmpty" style="text-align:center;padding:2rem;color:var(--muted)">Select an exam and subject to begin entering marks.</div>
+        </div>
+      </div>
+
+      <!-- Analyse -->
+      <div id="tabAnalyse" class="tab-panel">
+        <div id="analyseAccessDenied" style="display:none" class="access-denied">
+          <div>🔒</div><h3>Access Restricted</h3>
+          <p>Only admins can access analysis. Contact your administrator.</p>
+        </div>
+        <div id="analyseContent">
+          <div id="anClassTchNote" style="display:none;background:var(--blue-lt);border:1px solid var(--primary);border-radius:8px;padding:.75rem 1rem;margin-bottom:1rem;font-size:.85rem;color:var(--primary)">
+            📋 You are viewing analytics as a <strong>Class Teacher</strong>. You can see all subject results for your stream but cannot run new analyses.
+          </div>
+          <div class="card" style="margin-bottom:1.25rem">
+            <div class="frow c3">
+              <div class="fg"><label>Select Exam</label>
+                <select id="anExam" onchange="runAnalysis()"><option value="">— Select Exam —</option></select>
+              </div>
+              <div class="fg"><label>Grading System</label>
+                <select id="anGradingSystem" onchange="populateGSDropdowns();runAnalysis()"></select>
+              </div>
+              <div style="display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap">
+                <button id="anRunBtn" class="btn btn-primary btn-sm" onclick="runAnalysis()">▶ Run</button>
+                <button class="btn btn-outline btn-sm" onclick="exportAnalysisPDF()">⬇ PDF</button>
+                <button class="btn btn-outline btn-sm" onclick="exportAnalysisExcel()">⬇ Excel</button>
+              </div>
+            </div>
+          </div>
+          <div id="analyseResults"></div>
+        </div>
+      </div>
+
+      <!-- Merit List -->
+      <div id="tabMeritList" class="tab-panel">
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="frow c2" style="margin-bottom:.75rem">
+            <div class="fg"><label>Select Exam</label>
+              <select id="mlExam" onchange="renderMeritList()"><option value="">— Select Exam —</option></select>
+            </div>
+            <div class="fg"><label>Merit List Type</label>
+              <select id="mlType" onchange="onMlTypeChange()">
+                <option value="class_overall">Class Overall (all streams combined)</option>
+                <option value="class_stream">By Stream (per-stream only)</option>
+                <option value="class_overall_and_stream">Class Overall + All Streams</option>
+              </select>
+            </div>
+          </div>
+          <div class="frow c2" id="mlStreamRow" style="display:none;margin-bottom:.75rem">
+            <div class="fg"><label>Select Stream</label>
+              <select id="mlStream" onchange="renderMeritList()"><option value="">— Select Stream —</option></select>
+            </div>
+          </div>
+          <div class="btn-row-compact">
+            <button class="btn btn-primary btn-sm" onclick="renderMeritList()">🔄 Generate</button>
+            <button class="btn btn-outline btn-sm" onclick="printMeritList()">🖨 Print</button>
+            <button class="btn btn-outline btn-sm" onclick="exportMeritExcel()">⬇ Excel</button>
+            <button class="btn btn-success btn-sm" onclick="exportMeritPDF()">⬇ PDF</button>
+          </div>
+        </div>
+        <div id="meritListWrap" class="card">
+          <p style="color:var(--muted);text-align:center;padding:2rem">Select an exam and click Generate to view the merit list.</p>
+        </div>
+      </div>
+
+      <!-- Subject Analysis -->
+      <div id="tabSubjectAnalysis" class="tab-panel">
+        <div id="saAccessDenied" style="display:none" class="access-denied">
+          <div>🔒</div><h3>Access Restricted</h3>
+          <p>Contact your administrator for analysis access.</p>
+        </div>
+        <div id="saContent">
+          <div class="card" style="margin-bottom:1.25rem">
+            <div class="frow c2">
+              <div class="fg"><label>Select Exam</label>
+                <select id="saExam" onchange="renderSubjectAnalysis()"><option value="">— Select Exam —</option></select>
+              </div>
+              <div style="display:flex;gap:.5rem;align-items:flex-end">
+                <button class="btn btn-primary btn-sm" onclick="renderSubjectAnalysis()">▶ Run</button>
+                <button class="btn btn-outline btn-sm" onclick="exportSubjectAnalysisPDF()">⬇ PDF</button>
+                <button class="btn btn-outline btn-sm" onclick="exportSubjectAnalysisExcel()">⬇ Excel</button>
+              </div>
+            </div>
+            <p style="font-size:.8rem;color:var(--muted);margin-top:.5rem">Shows grade distribution (number of EE1, EE2, ME1… per subject), mean scores, and gender performance breakdown.</p>
+          </div>
+          <div id="saResults"></div>
+        </div>
+      </div>
+
+    </section><!-- end s-exams -->
+
+    <!-- ════ STUDENTS ════ -->
+    <section id="s-students" class="sec">
+      <div class="ph"><h2>🎓 Students</h2><p>Manage student records and enrolments.</p></div>
+
+      <div class="card" id="stuAddCard" style="margin-bottom:1.25rem">
+        <h3 id="stuFormTitle">➕ Add Student</h3>
+        <input type="hidden" id="editStuId"/>
+        <div class="frow c4">
+          <div class="fg"><label>Adm No *</label><input type="text" id="stuAdm" placeholder="A000000000"/></div>
+          <div class="fg"><label>Full Name *</label><input type="text" id="stuName" placeholder="Surname First Other"/></div>
+          <div class="fg"><label>Gender *</label>
+            <select id="stuGender"><option value="M">Male</option><option value="F">Female</option></select>
+          </div>
+          <div class="fg"><label>Class *</label><select id="stuClass"><option value="">— Select —</option></select></div>
+        </div>
+        <div class="frow c4">
+          <div class="fg"><label>Stream *</label><select id="stuStream"><option value="">— Select —</option></select></div>
+          <div class="fg"><label>Parent/Guardian Name</label><input type="text" id="stuParent" placeholder="Parent Name"/></div>
+          <div class="fg"><label>Parent Contact *</label><input type="tel" id="stuContact" placeholder="07XX XXX XXX"/></div>
+          <div class="fg"><label>Date of Birth</label><input type="date" id="stuDOB"/></div>
+        </div>
+        <div class="frow c2">
+          <div class="fg"><label>Notes</label><textarea id="stuNotes" rows="4" placeholder="Optional..."></textarea></div>
+        </div>
+        <div class="btn-row-compact">
+          <button class="btn btn-primary btn-sm" onclick="saveStudent()">💾 Save</button>
+          <button class="btn btn-outline btn-sm" onclick="cancelStuEdit()">✕ Cancel</button>
+          <button class="btn btn-outline btn-sm" onclick="showStudentUpload()">⬆ Excel</button>
+        </div>
+      </div>
+
+      <!-- Student Upload Modal Trigger -->
+      <div class="card" id="stuUploadCard" style="display:none;margin-bottom:1.25rem">
+        <h3>⬆ Upload Students from Excel</h3>
+        <div class="upload-zone" onclick="document.getElementById('stuFile').click()">
+          <div class="uz-icon">🎓</div>
+          <h4>Click or drag Excel/CSV file</h4>
+          <p>Columns: AdmNo, Name, Gender, Class, Stream, ParentContact, ParentName</p>
+          <input type="file" id="stuFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleStudentUpload(this)"/>
+        </div>
+        <div style="display:flex;gap:.75rem;margin-top:.75rem">
+          <button class="btn btn-outline" onclick="downloadStudentTemplate()">⬇ Download Template</button>
+          <button class="btn btn-outline" onclick="document.getElementById('stuUploadCard').style.display='none'">✕ Close</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ctbar">
+          <h3>All Students</h3>
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+            <div class="search-box"><span>🔍</span><input type="text" placeholder="Search..." oninput="filterTbl('stuTbl',this.value)"/></div>
+            <select style="height:36px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);padding:0 .7rem;font-family:inherit;font-size:.85rem" onchange="filterStudentsGender(this.value)">
+              <option value="">All Genders</option><option value="M">Male</option><option value="F">Female</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="exportStudentsExcel()">⬇ Excel</button>
+            <button class="btn btn-danger btn-sm" id="stuBulkDelBtn" style="display:none" onclick="deleteSelectedStudents()">🗑 Delete Selected (<span id="stuSelCount">0</span>)</button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table id="stuTbl">
+            <thead><tr><th><input type="checkbox" id="stuSelectAll" onchange="toggleSelectAllStudents(this)" title="Select all"/></th><th onclick="sortTable('stuBody',1,'num')" class="sortable-th"># <span class="sort-ico">⇅</span></th><th onclick="sortTable('stuBody',2,'str')" class="sortable-th">Adm No <span class="sort-ico">⇅</span></th><th onclick="sortTable('stuBody',3,'str')" class="sortable-th">Name <span class="sort-ico">⇅</span></th><th onclick="sortTable('stuBody',4,'str')" class="sortable-th">Gender <span class="sort-ico">⇅</span></th><th onclick="sortTable('stuBody',5,'str')" class="sortable-th">Class <span class="sort-ico">⇅</span></th><th onclick="sortTable('stuBody',6,'str')" class="sortable-th">Stream <span class="sort-ico">⇅</span></th><th onclick="sortTable('stuBody',7,'str')" class="sortable-th">Parent <span class="sort-ico">⇅</span></th><th>Contact</th><th>Subjects</th><th>Actions</th></tr></thead>
+            <tbody id="stuBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ TEACHERS ════ -->
+    <section id="s-teachers" class="sec">
+      <div class="ph"><h2>👨‍🏫 Teachers</h2><p>Manage teachers, subjects, and system access.</p></div>
+      <div class="card" style="margin-bottom:1.25rem">
+        <h3 id="tchFormTitle">➕ Add Teacher</h3>
+        <input type="hidden" id="editTchId"/>
+        <div class="frow c3">
+          <div class="fg"><label>Full Name *</label><input type="text" id="tchName" placeholder="Mr. John Kamau"/></div>
+          <div class="fg"><label>Phone *</label><input type="tel" id="tchPhone" placeholder="07XX XXX XXX"/></div>
+          <div class="fg"><label>Email</label><input type="email" id="tchEmail" placeholder="teacher@school.ke"/></div>
+        </div>
+        <div class="frow c3">
+          <div class="fg"><label>Username (Login)</label><input type="text" id="tchUser" placeholder="Unique username"/></div>
+          <div class="fg"><label>Password</label><input type="password" id="tchPass" placeholder="Set login password"/></div>
+          <div class="fg"><label>Assigned Classes</label><input type="text" id="tchClasses" placeholder="e.g. Grade 9, Grade 8"/></div>
+        </div>
+        <!-- Hidden rights checkboxes — managed via Settings > Teacher Access Manager -->
+        <input type="hidden" id="tchCanAnalyse" value="false"/>
+        <input type="hidden" id="tchCanReport" value="false"/>
+        <input type="hidden" id="tchCanMerit" value="false"/>
+        <div class="btn-row-compact">
+          <button class="btn btn-primary btn-sm" onclick="saveTeacher()">💾 Save</button>
+          <button class="btn btn-outline btn-sm" onclick="cancelTchEdit()">✕ Cancel</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ctbar"><h3>All Teachers</h3>
+          <div class="search-box"><span>🔍</span><input type="text" placeholder="Search..." oninput="filterTbl('tchTbl',this.value)"/></div>
+        </div>
+        <div class="tbl-wrap">
+          <table id="tchTbl">
+            <thead><tr><th onclick="sortTable('tchBody',0,'num')" class="sortable-th"># <span class="sort-ico">⇅</span></th><th onclick="sortTable('tchBody',1,'str')" class="sortable-th">Name <span class="sort-ico">⇅</span></th><th onclick="sortTable('tchBody',2,'str')" class="sortable-th">Phone <span class="sort-ico">⇅</span></th><th onclick="sortTable('tchBody',3,'str')" class="sortable-th">Email <span class="sort-ico">⇅</span></th><th>Subjects</th><th>Classes</th><th onclick="sortTable('tchBody',6,'str')" class="sortable-th">Username <span class="sort-ico">⇅</span></th><th>Rights</th><th>Actions</th></tr></thead>
+            <tbody id="tchBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ SUBJECTS ════ -->
+    <section id="s-subjects" class="sec">
+      <div class="ph"><h2>📚 Subjects</h2><p>Manage subjects, assign teachers and enrol students.</p></div>
+      <div class="card" style="margin-bottom:1.25rem">
+        <h3 id="subFormTitle">➕ Add Subject</h3>
+        <input type="hidden" id="editSubId"/>
+        <div class="frow c4">
+          <div class="fg"><label>Subject Name *</label><input type="text" id="subName" placeholder="e.g. Mathematics"/></div>
+          <div class="fg"><label>Code *</label><input type="text" id="subCode" placeholder="MTH" maxlength="5"/></div>
+          <div class="fg"><label>Max Marks</label><input type="number" id="subMax" value="100" min="1"/></div>
+          <div class="fg"><label>Category</label>
+            <select id="subCat"><option>Core</option><option>Elective</option><option>Technical</option><option>Languages</option></select>
+          </div>
+        </div>
+        <div class="frow c2">
+          <div class="fg"><label>Assign Teacher</label>
+            <select id="subTeacher"><option value="">— None —</option></select>
+          </div>
+        </div>
+        <div class="btn-row-compact">
+          <button class="btn btn-primary btn-sm" onclick="saveSubject()">💾 Save</button>
+          <button class="btn btn-outline btn-sm" onclick="cancelSubEdit()">✕ Cancel</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ctbar"><h3>All Subjects</h3>
+          <div class="search-box"><span>🔍</span><input type="text" placeholder="Search..." oninput="filterTbl('subTbl',this.value)"/></div>
+        </div>
+        <div class="tbl-wrap">
+          <table id="subTbl">
+            <thead><tr><th onclick="sortTable('subBody',0,'num')" class="sortable-th"># <span class="sort-ico">⇅</span></th><th onclick="sortTable('subBody',1,'str')" class="sortable-th">Name <span class="sort-ico">⇅</span></th><th onclick="sortTable('subBody',2,'str')" class="sortable-th">Code <span class="sort-ico">⇅</span></th><th onclick="sortTable('subBody',3,'num')" class="sortable-th">Max <span class="sort-ico">⇅</span></th><th onclick="sortTable('subBody',4,'str')" class="sortable-th">Category <span class="sort-ico">⇅</span></th><th onclick="sortTable('subBody',5,'str')" class="sortable-th">Teacher <span class="sort-ico">⇅</span></th><th onclick="sortTable('subBody',6,'num')" class="sortable-th">Enrolled <span class="sort-ico">⇅</span></th><th>Actions</th></tr></thead>
+            <tbody id="subBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ CLASSES ════ -->
+    <section id="s-classes" class="sec">
+      <div class="ph"><h2>🏫 Classes & Streams</h2><p>Manage class and stream assignments.</p></div>
+      <div class="grid-2" style="margin-bottom:1.25rem">
+        <div class="card">
+          <h3 id="clsFormTitle">➕ Add Class</h3>
+          <input type="hidden" id="editClsId"/>
+          <div class="frow c2">
+            <div class="fg"><label>Class Name *</label><input type="text" id="clsName" placeholder="e.g. Grade 9"/></div>
+            <div class="fg"><label>Level / Year</label><input type="text" id="clsLevel" placeholder="e.g. 9"/></div>
+          </div>
+          <div class="btn-row-compact">
+            <button class="btn btn-primary btn-sm" onclick="saveClass()">💾 Save</button>
+            <button class="btn btn-outline btn-sm" onclick="cancelClsEdit()">✕ Cancel</button>
+          </div>
+          <div class="tbl-wrap" style="margin-top:1rem">
+            <table id="clsTbl">
+              <thead><tr><th onclick="sortTable('clsBody',0,'num')" class="sortable-th"># <span class="sort-ico">⇅</span></th><th onclick="sortTable('clsBody',1,'str')" class="sortable-th">Class Name <span class="sort-ico">⇅</span></th><th onclick="sortTable('clsBody',2,'num')" class="sortable-th">Level <span class="sort-ico">⇅</span></th><th onclick="sortTable('clsBody',3,'num')" class="sortable-th">Students <span class="sort-ico">⇅</span></th><th>Actions</th></tr></thead>
+              <tbody id="clsBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <h3 id="strFormTitle">➕ Add Stream</h3>
+          <input type="hidden" id="editStrId"/>
+          <div class="frow c3">
+            <div class="fg"><label>Stream Name *</label><input type="text" id="strName" placeholder="e.g. East"/></div>
+            <div class="fg"><label>Belongs to Class</label>
+              <select id="strClass"><option value="">— Select Class —</option></select>
+            </div>
+            <div class="fg"><label>Class Teacher</label>
+              <select id="strTeacher"><option value="">— None —</option></select>
+            </div>
+          </div>
+          <div class="btn-row-compact">
+            <button class="btn btn-primary btn-sm" onclick="saveStream()">💾 Save</button>
+            <button class="btn btn-outline btn-sm" onclick="cancelStrEdit()">✕ Cancel</button>
+          </div>
+          <div class="tbl-wrap" style="margin-top:1rem">
+            <table id="strTbl">
+              <thead><tr><th onclick="sortTable('strBody',0,'num')" class="sortable-th"># <span class="sort-ico">⇅</span></th><th onclick="sortTable('strBody',1,'str')" class="sortable-th">Stream <span class="sort-ico">⇅</span></th><th onclick="sortTable('strBody',2,'str')" class="sortable-th">Class <span class="sort-ico">⇅</span></th><th onclick="sortTable('strBody',3,'num')" class="sortable-th">Students <span class="sort-ico">⇅</span></th><th onclick="sortTable('strBody',4,'str')" class="sortable-th">Class Teacher <span class="sort-ico">⇅</span></th><th>Subject Coverage</th><th>Actions</th></tr></thead>
+              <tbody id="strBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ REPORTS ════ -->
+    <section id="s-reports" class="sec">
+      <div class="ph"><h2>📄 Report Forms</h2><p>Generate downloadable PDF report forms for students.</p></div>
+      <div class="card" style="margin-bottom:1.25rem">
+        <h3>⚙ Report Settings</h3>
+        <div class="frow c3">
+          <div class="fg"><label>Select Exam *</label>
+            <select id="rpExam" onchange="onRpExamChange()"><option value="">— Select Exam —</option></select>
+          </div>
+          <div class="fg"><label>Select Student</label>
+            <select id="rpStudent" onchange="onRpStudentChange()"><option value="">— All Students —</option></select>
+          </div>
+          <div class="fg"><label>Filter by Stream</label>
+            <select id="rpStream"><option value="">— All Streams —</option></select>
+          </div>
+        </div>
+        <div class="frow c3">
+          <div class="fg">
+            <label>Term <span style="font-size:.75rem;color:#16a34a;font-weight:500">● Used for fee auto-link</span></label>
+            <select id="rpTerm" onchange="onRpTermYearChange()">
+              <option value="">— Auto from Exam —</option>
+              <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Year <span style="font-size:.75rem;color:#16a34a;font-weight:500">● Used for fee auto-link</span></label>
+            <select id="rpYear" onchange="onRpTermYearChange()">
+              <option value="">— Auto from Exam —</option>
+            </select>
+          </div>
+          <div class="fg" style="display:flex;flex-direction:column;justify-content:flex-end">
+            <div id="rpFeeAutoLinkStatus" style="padding:.45rem .75rem;border-radius:8px;border:1px solid var(--border);font-size:.8rem;color:var(--muted);background:var(--surface);min-height:2.2rem;display:flex;align-items:center;gap:.4rem">
+              <span>🔗</span> <span id="rpFeeAutoLinkText">Select exam &amp; student to auto-link fees</span>
+            </div>
+          </div>
+        </div>
+        <div class="frow c3">
+          <div class="fg">
+            <label class="check-label" style="font-size:.9rem;font-weight:500">
+              <input type="checkbox" id="rpAutoComments" checked/>
+              Auto-generate comments based on student performance (recommended)
+            </label>
+          </div>
+          <div class="fg"><label>Class Teacher Remarks (overrides auto if filled)</label>
+            <input type="text" id="rpCTRemarks" placeholder="Leave blank for auto-generated comment"/>
+          </div>
+          <div class="fg"><label>Principal Remarks (overrides auto if filled)</label>
+            <input type="text" id="rpPrincipalRemarks" placeholder="Leave blank for auto-generated comment"/>
+          </div>
+          <div class="fg"><label>School Closed On</label>
+            <input type="date" id="rpSchoolClosed"/>
+          </div>
+          <div class="fg"><label>Next Term Opens</label>
+            <input type="date" id="rpNextOpen"/>
+          </div>
+          <div class="fg"><label>Fee Balance This Term (KES) <span style="font-size:.75rem;color:#16a34a;font-weight:500">● Auto-linked from Fees</span></label>
+            <input type="number" id="rpFeeBalance" placeholder="Fallback default — used only when no fee record found for a student"/>
+            <span id="rpFeeStatusBadge" style="display:none;font-size:.78rem;font-weight:700;margin-top:.2rem"></span></div>
+          <div class="fg"><label>Fees for Next Term (KES) <span style="font-size:.75rem;color:#16a34a;font-weight:500">● Auto-linked from Fee Structure</span></label>
+            <input type="number" id="rpFeeNextTerm" placeholder="Auto-filled from fee structure — override if needed"/>
+          </div>
+        </div>
+        <div class="btn-row-compact">
+          <button class="btn btn-primary btn-sm" onclick="generateReport()">📄 Generate</button>
+          <button class="btn btn-outline btn-sm" onclick="previewReport()">👁 Preview</button>
+          <button class="btn btn-success btn-sm" onclick="downloadAllReportsPDF()">⬇ Download All PDF</button>
+        </div>
+      </div>
+      <!-- Preview area -->
+      <div id="reportPreviewArea"></div>
+      </div>
+    </section>
+
+    <!-- ════ TIMETABLE ════ -->
+    <section id="s-timetable" class="sec">
+      <div class="ph">
+        <h2>🕐 Timetables</h2>
+        <p>Generate, view and print class, teacher and block timetables — with collision detection.</p>
+      </div>
+
+      <!-- Timetable Tabs -->
+      <div class="tab-bar" id="ttTabBar">
+        <button class="tb active" onclick="openTTTab('ttTabStream',this)">📋 Stream View</button>
+        <button class="tb" onclick="openTTTab('ttTabTeacher',this)">👨‍🏫 Teacher View</button>
+        <button class="tb" onclick="openTTTab('ttTabBlock',this)">🗂 Block View</button>
+        <button class="tb" onclick="openTTTab('ttTabAuto',this)">⚡ Auto-Generate</button>
+      </div>
+
+      <!-- ── STREAM VIEW ── -->
+      <div id="ttTabStream" class="tab-panel active">
+        <div class="card" style="margin-bottom:1.25rem">
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+            <div class="fg" style="flex:1;min-width:180px">
+              <label>Class / Stream</label>
+              <select id="ttStreamSel" onchange="renderTimetable()">
+                <option value="">— Select Stream —</option>
+              </select>
+            </div>
+            <div class="fg" style="flex:1;min-width:140px">
+              <label>Term</label>
+              <select id="ttTerm" onchange="renderTimetable()">
+                <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+              </select>
+            </div>
+            <div class="fg" style="flex:1;min-width:100px">
+              <label>Year</label>
+              <input type="number" id="ttYear" value="2026" style="width:100%" onchange="renderTimetable()"/>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="openTimetableEditor()">✏️ Edit</button>
+            <button class="btn btn-outline btn-sm" onclick="printTimetable()">🖨 Print</button>
+            <button class="btn btn-success btn-sm" onclick="exportTimetablePDF()">⬇ PDF</button>
+          </div>
+        </div>
+        <div id="ttDisplay"></div>
+      </div>
+
+      <!-- ── TEACHER VIEW ── -->
+      <div id="ttTabTeacher" class="tab-panel">
+        <div class="card" style="margin-bottom:1.25rem">
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+            <div class="fg" style="flex:1;min-width:200px">
+              <label>Select Teacher</label>
+              <select id="ttTeacherSel" onchange="renderTeacherTimetable()">
+                <option value="">— Select Teacher —</option>
+              </select>
+            </div>
+            <div class="fg" style="flex:1;min-width:140px">
+              <label>Term</label>
+              <select id="ttTeacherTerm" onchange="renderTeacherTimetable()">
+                <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+              </select>
+            </div>
+            <div class="fg" style="flex:1;min-width:100px">
+              <label>Year</label>
+              <input type="number" id="ttTeacherYear" value="2026" style="width:100%" onchange="renderTeacherTimetable()"/>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="printTeacherTimetable()">🖨 Print</button>
+            <button class="btn btn-success btn-sm" onclick="exportTeacherTimetablePDF()">⬇ PDF</button>
+          </div>
+        </div>
+        <div id="ttTeacherDisplay"></div>
+      </div>
+
+      <!-- ── BLOCK VIEW ── -->
+      <div id="ttTabBlock" class="tab-panel">
+        <div class="card" style="margin-bottom:1.25rem">
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+            <div class="fg" style="flex:1;min-width:140px">
+              <label>Term</label>
+              <select id="ttBlockTerm" onchange="renderBlockTimetable()">
+                <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+              </select>
+            </div>
+            <div class="fg" style="flex:1;min-width:100px">
+              <label>Year</label>
+              <input type="number" id="ttBlockYear" value="2026" style="width:100%" onchange="renderBlockTimetable()"/>
+            </div>
+            <div class="fg" style="flex:1;min-width:140px">
+              <label>View By</label>
+              <select id="ttBlockViewBy" onchange="renderBlockTimetable()">
+                <option value="day">By Day (all streams)</option>
+                <option value="stream">All Streams Side-by-Side</option>
+              </select>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="printBlockTimetable()">🖨 Print</button>
+          </div>
+        </div>
+        <div id="ttBlockDisplay"></div>
+      </div>
+
+      <!-- ── AUTO-GENERATE ── -->
+      <div id="ttTabAuto" class="tab-panel">
+        <div class="card" style="margin-bottom:1.25rem">
+          <h3>⚡ Auto-Generate Timetables</h3>
+          <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem">
+            Automatically distributes subjects across the week for all streams, respecting teacher allocations and preventing collision (same teacher in two streams at once).
+          </p>
+          <div class="frow c3" style="margin-bottom:1rem">
+            <div class="fg">
+              <label>Term</label>
+              <select id="ttAutoTerm"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select>
+            </div>
+            <div class="fg">
+              <label>Year</label>
+              <input type="number" id="ttAutoYear" value="2026"/>
+            </div>
+            <div class="fg">
+              <label>Generate For</label>
+              <select id="ttAutoScope">
+                <option value="all">All Streams</option>
+              </select>
+            </div>
+          </div>
+          <div id="ttAutoSubjectAllocs" style="margin-bottom:1rem"></div>
+          <div class="btn-row-compact">
+            <button class="btn btn-primary btn-sm" onclick="autoGenerateTimetables()">⚡ Generate Now</button>
+            <button class="btn btn-outline btn-sm" onclick="loadAutoAllocUI()">🔄 Reload Allocations</button>
+          </div>
+          <div id="ttAutoStatus" style="margin-top:.75rem"></div>
+        </div>
+
+        <!-- Collision Checker -->
+        <div class="card">
+          <h3>🔍 Collision Checker</h3>
+          <p style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem">Checks if the same teacher is scheduled in two different streams at the same time.</p>
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem">
+            <div class="fg" style="flex:1;min-width:140px">
+              <label>Term</label>
+              <select id="ttCheckTerm"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select>
+            </div>
+            <div class="fg" style="flex:1;min-width:100px">
+              <label>Year</label>
+              <input type="number" id="ttCheckYear" value="2026"/>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="runCollisionCheck()" style="align-self:flex-end">🔍 Check</button>
+          </div>
+          <div id="ttCollisionResult"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ════ MESSAGING ════ -->
+    <section id="s-messaging" class="sec">
+      <div class="ph"><h2>💬 Messaging (SMS)</h2><p>Send messages to parents and teachers.</p></div>
+      <div class="sec-stack">
+        <div class="card">
+          <h3>📩 Compose Message</h3>
+          <div class="frow c2">
+            <div class="fg"><label>Recipient Type</label>
+              <select id="msgType" onchange="loadMsgRecipients()">
+                <option value="parent">Parents (by class/stream)</option>
+                <option value="individual">Individual Student Parent</option>
+                <option value="teacher">Teachers</option>
+                <option value="all">All Parents</option>
+              </select>
+            </div>
+            <div class="fg" id="msgFilterWrap"><label>Filter (Class/Stream)</label>
+              <select id="msgFilter" onchange="loadMsgRecipients()">
+                <option value="">All</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg" style="margin-bottom:1rem"><label>Message</label>
+            <textarea id="msgText" rows="3" placeholder="Type your message here... Use {name} for student name, {marks} for total marks, {grade} for grade."></textarea>
+          </div>
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="sendBulkSMS()">📤 Send SMS</button>
+            <button class="btn btn-outline" onclick="sendResultsSMS()">📊 Send Results SMS</button>
+          </div>
+          <div class="sms-credit-box" style="margin-top:1rem">
+            <div>SMS Credits: <strong id="smsCredits">0</strong></div>
+            <button class="btn btn-outline btn-sm" onclick="openMpesaModal()">💳 Buy Credits (M-Pesa)</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>👥 Recipients Preview</h3>
+          <div id="msgRecipientsList" style="max-height:250px;overflow-y:auto"></div>
+        </div>
+        <div class="card">
+          <h3>📜 Message Log</h3>
+          <div class="tbl-wrap">
+            <table id="msgLogTbl">
+            <thead><tr><th onclick="sortTable('msgLogBody',0,'num')" class="sortable-th"># <span class="sort-ico">⇅</span></th><th onclick="sortTable('msgLogBody',1,'date')" class="sortable-th">Date <span class="sort-ico">⇅</span></th><th onclick="sortTable('msgLogBody',2,'str')" class="sortable-th">To <span class="sort-ico">⇅</span></th><th>Message Preview</th><th onclick="sortTable('msgLogBody',4,'str')" class="sortable-th">Status <span class="sort-ico">⇅</span></th><th onclick="sortTable('msgLogBody',5,'num')" class="sortable-th">Credits Used <span class="sort-ico">⇅</span></th></tr></thead>
+            <tbody id="msgLogBody"></tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ════ FEES MANAGEMENT ════ -->
+    <section id="s-fees" class="sec">
+      <div class="ph">
+        <h2>💰 Fees Management</h2>
+        <p id="feesSubtitle">Track, record and manage school fee payments.</p>
+      </div>
+
+      <!-- Super Admin Overview Cards -->
+      <div id="feesAdminStats" class="stat-row" style="display:none"></div>
+
+      <!-- Tab Bar -->
+      <div class="tab-bar" id="feesTabBar">
+        <button class="tb active" onclick="openFeesTab('tabFeeOverview',this)" id="tbFeeOverview">📊 Overview</button>
+        <button class="tb" onclick="openFeesTab('tabFeeStructure',this)" id="tbFeeStructure">🏗 Fee Structure</button>
+        <button class="tb" onclick="openFeesTab('tabFeePayments',this)" id="tbFeePayments">💳 Record Payment</button>
+        <button class="tb" onclick="openFeesTab('tabFeeStudents',this)" id="tbFeeStudents">🎓 Student Balances</button>
+        <button class="tb" onclick="openFeesTab('tabFeeReminders',this)" id="tbFeeReminders">🔔 Reminders</button>
+        <button class="tb" onclick="openFeesTab('tabFeeReceipts',this)" id="tbFeeReceipts">🧾 Receipts</button>
+      </div>
+
+      <!-- ── OVERVIEW TAB ── -->
+      <div id="tabFeeOverview" class="tab-panel active">
+        <div class="fee-filters card" style="padding:1rem;margin-bottom:1rem">
+          <div class="frow c4">
+            <div class="fg">
+              <label>Filter by Class</label>
+              <select id="fovClass" onchange="renderFeeOverview()">
+                <option value="">All Classes</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Filter by Term</label>
+              <select id="fovTerm" onchange="renderFeeOverview()">
+                <option value="">All Terms</option>
+                <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Filter by Year</label>
+              <select id="fovYear" onchange="renderFeeOverview()">
+                <option value="">All Years</option>
+              </select>
+            </div>
+            <div class="fg" style="display:flex;align-items:flex-end;gap:.5rem">
+              <button class="btn btn-outline btn-sm" onclick="exportFeesSummary()">⬇ Export CSV</button>
+              <button class="btn btn-outline btn-sm" onclick="printFeeReport()">🖨 Print Report</button>
+            </div>
+          </div>
+        </div>
+        <div id="feeOverviewStats" class="fee-ov-stats"></div>
+        <div class="card" style="margin-top:1rem">
+          <h3>📋 Class-wise Fee Summary</h3>
+          <div class="tbl-wrap"><table id="feeOverviewTable">
+            <thead><tr><th onclick="sortTable('feeOverviewBody',0,'str')" class="sortable-th">Class <span class="sort-ico">⇅</span></th><th onclick="sortTable('feeOverviewBody',1,'num')" class="sortable-th">Students <span class="sort-ico">⇅</span></th><th onclick="sortTable('feeOverviewBody',2,'kes')" class="sortable-th">Expected <span class="sort-ico">⇅</span></th><th onclick="sortTable('feeOverviewBody',3,'kes')" class="sortable-th">Collected <span class="sort-ico">⇅</span></th><th onclick="sortTable('feeOverviewBody',4,'kes')" class="sortable-th">Outstanding <span class="sort-ico">⇅</span></th><th onclick="sortTable('feeOverviewBody',5,'pct')" class="sortable-th">% Collected <span class="sort-ico">⇅</span></th><th>Action</th></tr></thead>
+            <tbody id="feeOverviewBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ── FEE STRUCTURE TAB ── -->
+      <div id="tabFeeStructure" class="tab-panel">
+        <div class="sec-stack">
+          <div class="card">
+            <h3>➕ Set / Edit Fee Structure</h3>
+            <input type="hidden" id="fstrEditId"/>
+            <div class="frow c2">
+              <div class="fg"><label>Class *</label>
+                <select id="fstrClass"><option value="">— Select Class —</option></select>
+              </div>
+              <div class="fg"><label>Term *</label>
+                <select id="fstrTerm"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select>
+              </div>
+            </div>
+            <div class="frow c2">
+              <div class="fg"><label>Academic Year *</label>
+                <input type="number" id="fstrYear" placeholder="2025" value="2025"/>
+              </div>
+              <div class="fg"><label>Total Fee Amount (KES) *</label>
+                <input type="number" id="fstrTotal" placeholder="e.g. 12000" min="0"/>
+              </div>
+            </div>
+            <h4 style="margin:.75rem 0 .5rem;font-size:.85rem;color:var(--muted)">Fee Breakdown (Optional)</h4>
+            <div id="fstrBreakdownRows"></div>
+            <button class="btn btn-outline btn-sm" style="margin-bottom:.75rem" onclick="addFstrBreakdownRow()">➕ Add Item</button>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+              <button class="btn btn-primary btn-sm" onclick="saveFeeStructure()">💾 Save Structure</button>
+              <button class="btn btn-outline btn-sm" onclick="clearFstrForm()">✕ Clear</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>📋 Existing Fee Structures</h3>
+            <div id="feeStructureList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── RECORD PAYMENT TAB ── -->
+      <div id="tabFeePayments" class="tab-panel">
+        <div class="sec-stack">
+          <div class="card">
+            <h3>💳 Record Fee Payment</h3>
+            <div class="frow c2">
+              <div class="fg"><label>Class *</label>
+                <select id="fpClass" onchange="onFpClassChange()"><option value="">— Select Class —</option></select>
+              </div>
+              <div class="fg"><label>Term *</label>
+                <select id="fpTerm" onchange="onFpTermChange()"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select>
+              </div>
+            </div>
+            <div class="frow c2">
+              <div class="fg"><label>Academic Year *</label>
+                <select id="fpYear" onchange="onFpTermChange()"></select>
+              </div>
+              <div class="fg"><label>Student *</label>
+                <select id="fpStudent" onchange="onFpStudentChange()"><option value="">— Select Student —</option></select>
+              </div>
+            </div>
+            <div class="fee-balance-card" id="fpBalanceCard" style="display:none">
+              <div class="fbc-row">
+                <span class="fbc-label">Total Fee</span>
+                <span class="fbc-val" id="fpTotalFee">KES 0</span>
+              </div>
+              <div class="fbc-row">
+                <span class="fbc-label">Amount Paid</span>
+                <span class="fbc-val fbc-green" id="fpAmountPaid">KES 0</span>
+              </div>
+              <div class="fbc-row fbc-highlight">
+                <span class="fbc-label">Outstanding Balance</span>
+                <span class="fbc-val fbc-red" id="fpBalance">KES 0</span>
+              </div>
+            </div>
+            <div class="frow c3">
+              <div class="fg"><label>Amount Paying (KES) *</label>
+                <input type="number" id="fpAmount" placeholder="Enter amount" min="1"/>
+              </div>
+              <div class="fg"><label>Payment Mode</label>
+                <select id="fpMode">
+                  <option>Cash</option><option>M-Pesa</option><option>Bank Transfer</option>
+                  <option>Cheque</option><option>Other</option>
+                </select>
+              </div>
+              <div class="fg"><label>Payment Date</label>
+                <input type="date" id="fpDate"/>
+              </div>
+            </div>
+            <div class="fg"><label>Reference / Notes</label>
+              <input type="text" id="fpNotes" placeholder="e.g. M-Pesa Ref: QHJ7X..."/>
+            </div>
+            <button class="btn btn-primary" style="width:100%;margin-top:.5rem" onclick="recordFeePayment()">💾 Record Payment & Print Receipt</button>
+          </div>
+          <div class="card">
+            <h3>🧾 Last Receipt Preview</h3>
+            <div id="receiptPreview" style="min-height:200px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.9rem">
+              Record a payment to see the receipt preview here.
+            </div>
+            <div style="margin-top:.75rem;display:flex;gap:.5rem;display:none" id="receiptActions">
+              <button class="btn btn-primary btn-sm" onclick="printLastReceipt()">🖨 Print Receipt</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── STUDENT BALANCES TAB ── -->
+      <div id="tabFeeStudents" class="tab-panel">
+        <div class="fee-filters card" style="padding:1rem;margin-bottom:1rem">
+          <div class="frow c4">
+            <div class="fg"><label>Class</label>
+              <select id="fsbClass" onchange="renderStudentBalances()"><option value="">All Classes</option></select>
+            </div>
+            <div class="fg"><label>Term</label>
+              <select id="fsbTerm" onchange="renderStudentBalances()">
+                <option value="">All Terms</option>
+                <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+              </select>
+            </div>
+            <div class="fg"><label>Year</label>
+              <select id="fsbYear" onchange="renderStudentBalances()"><option value="">All Years</option></select>
+            </div>
+            <div class="fg"><label>Status</label>
+              <select id="fsbStatus" onchange="renderStudentBalances()">
+                <option value="">All</option>
+                <option value="cleared">Cleared</option>
+                <option value="partial">Partial</option>
+                <option value="unpaid">Unpaid</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top:.5rem">
+            <input type="text" id="fsbSearch" placeholder="🔍 Search student name or admission number..." style="width:100%;padding:.5rem .75rem;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:.85rem" oninput="renderStudentBalances()"/>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+            <h3>🎓 Student Fee Balances</h3>
+            <div style="display:flex;gap:.5rem">
+              <button class="btn btn-outline btn-sm" onclick="exportStudentBalances()">⬇ Export</button>
+            </div>
+          </div>
+          <div class="tbl-wrap">
+            <table id="feeStudentsTbl">
+              <thead><tr><th onclick="sortTable('feeStudentsBody',0,'num')" class="sortable-th"># <span class="sort-ico">⇅</span></th><th onclick="sortTable('feeStudentsBody',1,'str')" class="sortable-th">Adm No <span class="sort-ico">⇅</span></th><th onclick="sortTable('feeStudentsBody',2,'str')" class="sortable-th">Student Name <span class="sort-ico">⇅</span></th><th onclick="sortTable('feeStudentsBody',3,'str')" class="sortable-th">Class <span class="sort-ico">⇅</span></th><th onclick="sortTable('feeStudentsBody',4,'str')" class="sortable-th">Term <span class="sort-ico">⇅</span></th><th onclick="sortTable('feeStudentsBody',5,'kes')" class="sortable-th">Total Fee <span class="sort-ico">⇅</span></th><th onclick="sortTable('feeStudentsBody',6,'kes')" class="sortable-th">Paid <span class="sort-ico">⇅</span></th><th onclick="sortTable('feeStudentsBody',7,'kes')" class="sortable-th">Balance <span class="sort-ico">⇅</span></th><th onclick="sortTable('feeStudentsBody',8,'str')" class="sortable-th">Status <span class="sort-ico">⇅</span></th><th>Actions</th></tr></thead>
+              <tbody id="feeStudentsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── REMINDERS TAB ── -->
+      <div id="tabFeeReminders" class="tab-panel">
+        <div class="fee-filters card" style="padding:1rem;margin-bottom:1rem">
+          <div class="frow c3">
+            <div class="fg"><label>Class</label>
+              <select id="fremClass" onchange="renderFeeReminders()"><option value="">All Classes</option></select>
+            </div>
+            <div class="fg"><label>Term</label>
+              <select id="fremTerm" onchange="renderFeeReminders()">
+                <option value="">All Terms</option>
+                <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+              </select>
+            </div>
+            <div class="fg"><label>Year</label>
+              <select id="fremYear" onchange="renderFeeReminders()"><option value="">All Years</option></select>
+            </div>
+          </div>
+          <div style="margin-top:.5rem;display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="printAllReminders()">🖨 Print All Reminders</button>
+            <button class="btn btn-outline btn-sm" onclick="renderFeeReminders()">🔄 Refresh</button>
+          </div>
+        </div>
+        <div id="feeRemindersList"></div>
+      </div>
+
+      <!-- ── RECEIPTS TAB ── -->
+      <div id="tabFeeReceipts" class="tab-panel">
+        <div class="fee-filters card" style="padding:1rem;margin-bottom:1rem">
+          <div class="frow c3">
+            <div class="fg"><label>Class</label>
+              <select id="frctClass" onchange="renderReceiptsLog()"><option value="">All Classes</option></select>
+            </div>
+            <div class="fg"><label>Term</label>
+              <select id="frctTerm" onchange="renderReceiptsLog()">
+                <option value="">All Terms</option>
+                <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+              </select>
+            </div>
+            <div class="fg"><label>Search</label>
+              <input type="text" id="frctSearch" placeholder="Receipt no, student name..." style="padding:.45rem .75rem;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);width:100%;font-size:.85rem" oninput="renderReceiptsLog()"/>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🧾 Payment Receipts Log</h3>
+          <div class="tbl-wrap">
+            <table id="receiptsLogTbl">
+              <thead><tr><th onclick="sortTable('receiptsLogBody',0,'str')" class="sortable-th">Receipt No <span class="sort-ico">⇅</span></th><th onclick="sortTable('receiptsLogBody',1,'date')" class="sortable-th">Date <span class="sort-ico">⇅</span></th><th onclick="sortTable('receiptsLogBody',2,'str')" class="sortable-th">Student <span class="sort-ico">⇅</span></th><th onclick="sortTable('receiptsLogBody',3,'str')" class="sortable-th">Class <span class="sort-ico">⇅</span></th><th onclick="sortTable('receiptsLogBody',4,'str')" class="sortable-th">Term <span class="sort-ico">⇅</span></th><th onclick="sortTable('receiptsLogBody',5,'kes')" class="sortable-th">Amount <span class="sort-ico">⇅</span></th><th onclick="sortTable('receiptsLogBody',6,'str')" class="sortable-th">Mode <span class="sort-ico">⇅</span></th><th onclick="sortTable('receiptsLogBody',7,'kes')" class="sortable-th">Balance After <span class="sort-ico">⇅</span></th><th>Actions</th></tr></thead>
+              <tbody id="receiptsLogBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ════ SETTINGS ════ -->
+    <section id="s-settings" class="sec">
+      <div class="ph"><h2>⚙ Settings</h2><p>Configure your school system.</p></div>
+
+      <!-- ── Platform: Manage Schools (superadmin/admin only) ── -->
+      <div id="manageSchoolsCard" class="card" style="display:none;margin-bottom:1.5rem">
+        <h3>🏫 Manage School Accounts</h3>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">Create and manage school accounts. Each school has fully isolated data.</p>
+        <div id="settingsSchoolList" style="margin-bottom:1rem"></div>
+        <div style="border-top:1px solid var(--border);padding-top:1rem">
+          <h4 style="font-size:.88rem;margin-bottom:.75rem;color:var(--muted)">➕ Add New School</h4>
+          <div class="frow c2" style="margin-bottom:.75rem">
+            <div class="fg"><label>School Name *</label><input type="text" id="spsName" placeholder="e.g. Sunrise Academy"/></div>
+            <div class="fg"><label>Username *</label><input type="text" id="spsUser" placeholder="e.g. sunrise"/></div>
+            <div class="fg"><label>Password *</label><input type="password" id="spsPass" placeholder="Strong password"/></div>
+            <div class="fg"><label>Email</label><input type="email" id="spsEmail" placeholder="info@school.ke"/></div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="addSchoolFromSettings()">➕ Create School</button>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:1rem">
+          <h4 style="font-size:.88rem;margin-bottom:.75rem;color:var(--muted)">🔑 Change Platform Password</h4>
+          <div class="frow c3" style="margin-bottom:.75rem">
+            <div class="fg"><label>Current Password</label><input type="password" id="curPlatformPwd" placeholder="Current platform password"/></div>
+            <div class="fg"><label>New Password</label><input type="password" id="newPlatformPwd" placeholder="New password (min 6 chars)"/></div>
+            <div class="fg"><label>Confirm New Password</label><input type="password" id="confPlatformPwd" placeholder="Repeat new password"/></div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="changePlatformPassword()">🔑 Update Platform Password</button>
+        </div>
+      </div>
+
+      <div class="sec-stack">
+        <div class="card">
+          <h3>🏫 School Information</h3>
+          <div class="frow c2">
+            <div class="fg"><label>School Name *</label><input type="text" id="setSchoolName" placeholder="Enter School Name"/></div>
+            <div class="fg"><label>P.O. Box / Address</label><input type="text" id="setSchoolAddr" placeholder="P.O. Box 18199, Nakuru"/></div>
+            <div class="fg"><label>Phone</label><input type="tel" id="setSchoolPhone" placeholder="07XX XXX XXX"/></div>
+            <div class="fg"><label>Email</label><input type="email" id="setSchoolEmail" placeholder="info@school.ke"/></div>
+            <div class="fg"><label>Current Term</label>
+              <select id="setTerm"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select>
+            </div>
+            <div class="fg"><label>Academic Year</label><input type="number" id="setYear" value="2025"/></div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveSettings()">💾 Save Settings</button>
+        </div>
+        <div class="card">
+          <h3>🔐 Admin Accounts</h3>
+          <div class="admin-list" id="adminList"></div>
+          <div style="margin-top:1.25rem;border-top:1px solid var(--border);padding-top:1.25rem">
+            <h4 style="margin-bottom:1rem;font-size:.9rem;color:var(--muted)">➕ Add Admin Account</h4>
+            <div class="frow c2">
+              <div class="fg"><label>Full Name</label><input type="text" id="newAdminName" placeholder="Admin Name"/></div>
+              <div class="fg"><label>Username</label><input type="text" id="newAdminUser" placeholder="Unique username"/></div>
+              <div class="fg"><label>Password</label><input type="password" id="newAdminPass" placeholder="Strong password"/></div>
+              <div class="fg"><label>Role</label>
+                <select id="newAdminRole"><option value="admin">Admin</option><option value="superadmin">Super Admin</option><option value="principal">Principal</option><option value="bursar">Bursar</option></select>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="addAdminAccount()">➕ Add Account</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>📊 Grading Systems</h3>
+          <div class="sec-stack">
+            <div>
+              <h4 style="font-size:.9rem;margin-bottom:.75rem;color:var(--muted)">Saved Systems</h4>
+              <div id="gsSystemList"></div>
+            </div>
+            <div>
+              <h4 style="font-size:.9rem;margin-bottom:.75rem;color:var(--muted)">➕ Add New Grading System</h4>
+              <div class="fg" style="margin-bottom:.75rem"><label>System Name *</label>
+                <input type="text" id="gsNewName" placeholder="e.g. KCSE Grading, O-Level"/>
+              </div>
+              <div class="tbl-wrap" style="margin-bottom:.75rem">
+                <table style="font-size:.82rem">
+                  <thead><tr><th>Min%</th><th>Max%</th><th>Grade</th><th>Points</th><th>Label</th><th></th></tr></thead>
+                  <tbody id="gsBandsBody"></tbody>
+                </table>
+              </div>
+              <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+                <button class="btn btn-outline btn-sm" onclick="addGSBandRow()">➕ Add Band</button>
+                <button class="btn btn-primary btn-sm" onclick="saveNewGradingSystem()">💾 Save System</button>
+              </div>
+              <div style="margin-top:.75rem;font-size:.78rem;color:var(--muted)">
+                Example grades: EE1, EE2, ME1, ME2, AE1, AE2, BE1, BE2 (CBC) or A, A-, B+, B, B-, C+, C (KCSE)
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>💾 Data Management</h3>
+          <div class="btn-row-compact">
+            <button class="btn btn-outline btn-sm" onclick="exportAllData()">⬇ Export</button>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('importDataFile').click()">⬆ Import</button>
+            <input type="file" id="importDataFile" accept=".json" style="display:none" onchange="importData(this)"/>
+            <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑 Clear All</button>
+          </div>
+        </div>
+
+        <!-- ── SUPER ADMIN: Global Teacher Restrictions ── -->
+        <div class="card" id="globalTeacherRestrictCard" style="display:none">
+          <h3>🔒 Teacher Visibility Restrictions</h3>
+          <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.25rem">Control what all teachers can see system-wide. Teachers will only see what they teach under Stream Management.</p>
+          <div style="display:flex;flex-direction:column;gap:.75rem">
+            <label class="check-label" style="padding:.6rem .75rem;border:1px solid var(--border);border-radius:8px;background:var(--surface)">
+              <input type="checkbox" id="restrictTeacherAnalytics"/>
+              <div>
+                <div style="font-size:.88rem;font-weight:600">📊 Hide Analytics &amp; Exam Analysis</div>
+                <div style="font-size:.76rem;color:var(--muted)">Teachers cannot access analytics, exam analysis, merit lists, or subject analysis tabs (unless individually granted)</div>
+              </div>
+            </label>
+            <label class="check-label" style="padding:.6rem .75rem;border:1px solid var(--border);border-radius:8px;background:var(--surface)">
+              <input type="checkbox" id="restrictTeacherFees"/>
+              <div>
+                <div style="font-size:.88rem;font-weight:600">💰 Hide Fees Section</div>
+                <div style="font-size:.76rem;color:var(--muted)">Teachers cannot see the Fees module in the sidebar</div>
+              </div>
+            </label>
+            <label class="check-label" style="padding:.6rem .75rem;border:1px solid var(--border);border-radius:8px;background:var(--surface)">
+              <input type="checkbox" id="restrictTeacherList"/>
+              <div>
+                <div style="font-size:.88rem;font-weight:600">👨&zwj;🏫 Hide List of Other Teachers</div>
+                <div style="font-size:.76rem;color:var(--muted)">Teachers cannot see the Teachers section — they only see their own assigned subjects from Stream Management</div>
+              </div>
+            </label>
+          </div>
+          <div style="margin-top:1rem">
+            <button class="btn btn-primary btn-sm" onclick="saveGlobalTeacherRestrictions()">💾 Save Restrictions</button>
+          </div>
+        </div>
+
+        <!-- ── TEACHER PREFERENCES (visible to teachers only) ── -->
+        <div class="card" id="teacherPrefsCard" style="display:none">
+          <h3>🎯 My Teaching Preferences</h3>
+          <p style="color:var(--muted);font-size:.85rem;margin-bottom:1rem">These settings control what you see across the system — your subjects, your class, and your access scope.</p>
+          <div class="sec-stack">
+            <div>
+              <h4 style="font-size:.88rem;margin-bottom:.75rem;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:.4rem">📚 My Subjects</h4>
+              <p style="font-size:.8rem;color:var(--muted);margin-bottom:.6rem">Subjects assigned to you appear in Upload Marks and Analysis. Contact admin to change assignments.</p>
+              <div id="prefMySubjects" style="display:flex;flex-wrap:wrap;gap:.4rem;min-height:2rem"></div>
+            </div>
+            <div>
+              <h4 style="font-size:.88rem;margin-bottom:.75rem;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:.4rem">🏫 My Class</h4>
+              <p style="font-size:.8rem;color:var(--muted);margin-bottom:.6rem">If you are a class teacher, your analysis is scoped to your class only.</p>
+              <div id="prefMyClass" style="min-height:2rem"></div>
+            </div>
+            <div>
+              <h4 style="font-size:.88rem;margin-bottom:.75rem;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:.4rem">🔑 My Access Rights</h4>
+              <div id="prefMyRights" style="display:flex;flex-direction:column;gap:.5rem"></div>
+            </div>
+            <div>
+              <h4 style="font-size:.88rem;margin-bottom:.75rem;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:.4rem">🔒 Change My Password</h4>
+              <div class="frow c3">
+                <div class="fg">
+                  <label>Current Password</label>
+                  <input type="password" id="prefCurPass" placeholder="Enter current password"/>
+                </div>
+                <div class="fg">
+                  <label>New Password</label>
+                  <input type="password" id="prefNewPass" placeholder="Enter new password"/>
+                </div>
+                <div class="fg">
+                  <label>Confirm New Password</label>
+                  <input type="password" id="prefConfPass" placeholder="Confirm new password"/>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="saveTeacherPassword()">🔒 Update Password</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── ADMIN-ONLY: Teacher Access Manager ── -->
+        <div class="card" id="adminTeacherAccessCard" style="display:none">
+          <h3>👨‍🏫 Teacher Access Manager</h3>
+          <p style="color:var(--muted);font-size:.85rem;margin-bottom:1rem">Grant individual teachers extra rights. Subject assignments are managed via <strong>Stream Management</strong>. Changes take effect the next time the teacher logs in.</p>
+          <div class="fg" style="margin-bottom:1rem">
+            <label>Select Teacher</label>
+            <select id="tamTeacher" onchange="renderTeacherAccessManager()">
+              <option value="">— Choose a teacher —</option>
+            </select>
+          </div>
+          <div id="tamContent" style="display:none">
+            <div class="sec-stack">
+              <div>
+                <h4 style="font-size:.88rem;margin-bottom:.5rem;color:var(--muted)">📚 Subjects from Stream Management</h4>
+                <p style="font-size:.78rem;color:var(--muted);margin-bottom:.6rem">These subjects are automatically derived from Stream Management assignments.</p>
+                <div id="tamSubjects" style="display:flex;flex-direction:column;gap:.4rem;max-height:280px;overflow-y:auto"></div>
+              </div>
+              <div>
+                <h4 style="font-size:.88rem;margin-bottom:.75rem;color:var(--muted)">🔑 Extra Access Rights</h4>
+                <div style="display:flex;flex-direction:column;gap:.65rem" id="tamRights"></div>
+                <h4 style="font-size:.88rem;margin:.75rem 0;color:var(--muted)">📊 Class Teacher Scope</h4>
+                <div id="tamScope" style="display:flex;flex-direction:column;gap:.5rem"></div>
+                <div style="margin-top:1rem">
+                  <button class="btn btn-primary btn-sm" onclick="saveTeacherAccessSettings()">💾 Save Changes</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  PAPERS & RESOURCES SECTION                                 -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section id="s-papers" class="sec">
+      <div class="ph">
+        <h2>📂 Papers &amp; Resources</h2>
+        <p>Upload and manage termly exam papers and revision materials for students.</p>
+      </div>
+
+      <div class="tab-bar" id="papersTabBar">
+        <button class="tb active" onclick="openPapersTab('tabTermlyExams',this)" id="tbTermlyExams">📝 Termly Exams</button>
+        <button class="tb" onclick="openPapersTab('tabRevision',this)" id="tbRevision">📖 Revision</button>
+      </div>
+
+      <!-- ── TERMLY EXAMS TAB ── -->
+      <div id="tabTermlyExams" class="tab-panel active">
+
+        <!-- Upload Card (Admin Only) -->
+        <div class="card" id="termlyUploadCard" style="margin-bottom:1.25rem">
+          <h3>⬆️ Upload Exam Paper</h3>
+          <div class="frow c3" style="gap:1rem;margin-bottom:1rem">
+            <div class="fg">
+              <label>Subject *</label>
+              <select id="tpSubject">
+                <option value="">— Select Subject —</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Term *</label>
+              <select id="tpTerm">
+                <option>Term 1</option>
+                <option>Term 2</option>
+                <option>Term 3</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Year *</label>
+              <input type="number" id="tpYear" placeholder="2025" value="2025"/>
+            </div>
+          </div>
+          <div class="frow c3" style="gap:1rem;margin-bottom:1rem">
+            <div class="fg">
+              <label>Paper Title *</label>
+              <input type="text" id="tpTitle" placeholder="e.g. Mid-Term Paper 1"/>
+            </div>
+            <div class="fg">
+              <label>Class / Level</label>
+              <input type="text" id="tpClass" placeholder="e.g. Form 3, All Classes"/>
+            </div>
+            <div class="fg">
+              <label>Price (KES) *</label>
+              <input type="number" id="tpPrice" placeholder="e.g. 50" min="0" step="1"/>
+            </div>
+          </div>
+          <div class="frow c2">
+            <div class="fg">
+              <label>Description / Notes</label>
+              <textarea id="tpDesc" rows="2" placeholder="Optional description of the paper..."></textarea>
+            </div>
+            <div class="fg">
+              <label>Upload File (PDF / Word / Image)</label>
+              <input type="file" id="tpFile" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="border:1.5px dashed var(--border-lt);padding:.6rem;border-radius:8px;width:100%;box-sizing:border-box"/>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="uploadTermlyPaper()">⬆️ Upload Paper</button>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="card" style="padding:1rem;margin-bottom:1.25rem">
+          <div class="frow c4" style="gap:.75rem;align-items:flex-end">
+            <div class="fg">
+              <label>Filter by Subject</label>
+              <select id="tpFilterSubject" onchange="renderTermlyPapers()">
+                <option value="">All Subjects</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Filter by Term</label>
+              <select id="tpFilterTerm" onchange="renderTermlyPapers()">
+                <option value="">All Terms</option>
+                <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Filter by Year</label>
+              <select id="tpFilterYear" onchange="renderTermlyPapers()">
+                <option value="">All Years</option>
+              </select>
+            </div>
+            <div class="fg">
+              <div class="search-box" style="margin:0"><span>🔍</span><input type="text" id="tpSearch" placeholder="Search papers..." oninput="renderTermlyPapers()"/></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Papers Grid (grouped by subject) -->
+        <div id="termlyPapersGrid" style="display:block"></div>
+        <div id="termlyPapersEmpty" style="display:none;text-align:center;padding:3rem;color:var(--muted)">
+          <div style="font-size:2.5rem;margin-bottom:.75rem">📂</div>
+          <p style="font-weight:600">No papers uploaded yet.</p>
+          <p style="font-size:.85rem">Upload your first exam paper using the form above.</p>
+        </div>
+
+      </div><!-- end tabTermlyExams -->
+
+      <!-- ── REVISION TAB ── -->
+      <div id="tabRevision" class="tab-panel">
+        <div class="card" style="padding:0;overflow:hidden;margin-bottom:1.25rem">
+          <!-- Coming Soon Banner -->
+          <div style="background:linear-gradient(135deg,#1a6fb5 0%,#7c3aed 100%);padding:2.5rem 2rem;text-align:center;color:#fff">
+            <div style="font-size:3rem;margin-bottom:.75rem">📖</div>
+            <h3 style="font-size:1.3rem;font-weight:800;margin:0 0 .4rem;color:#fff">Revision Materials</h3>
+            <p style="font-size:.9rem;opacity:.85;margin:0">Coming Soon — This section will be fully configured shortly.</p>
+          </div>
+          <!-- Planned features list -->
+          <div style="padding:1.5rem 2rem">
+            <p style="font-size:.82rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 1rem">Planned features</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.75rem">
+              <div style="background:var(--bg);border:1px solid var(--border-lt);border-radius:10px;padding:.75rem 1rem;display:flex;align-items:flex-start;gap:.6rem">
+                <span style="font-size:1.2rem;flex-shrink:0">📝</span>
+                <div><div style="font-weight:700;font-size:.85rem">Topic Notes</div><div style="font-size:.76rem;color:var(--muted);line-height:1.4;margin-top:.1rem">Subject-by-subject revision notes</div></div>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--border-lt);border-radius:10px;padding:.75rem 1rem;display:flex;align-items:flex-start;gap:.6rem">
+                <span style="font-size:1.2rem;flex-shrink:0">📊</span>
+                <div><div style="font-weight:700;font-size:.85rem">Past Papers</div><div style="font-size:.76rem;color:var(--muted);line-height:1.4;margin-top:.1rem">Previous exam papers with answers</div></div>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--border-lt);border-radius:10px;padding:.75rem 1rem;display:flex;align-items:flex-start;gap:.6rem">
+                <span style="font-size:1.2rem;flex-shrink:0">🎯</span>
+                <div><div style="font-weight:700;font-size:.85rem">Practice Quizzes</div><div style="font-size:.76rem;color:var(--muted);line-height:1.4;margin-top:.1rem">Interactive self-test quizzes</div></div>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--border-lt);border-radius:10px;padding:.75rem 1rem;display:flex;align-items:flex-start;gap:.6rem">
+                <span style="font-size:1.2rem;flex-shrink:0">📹</span>
+                <div><div style="font-weight:700;font-size:.85rem">Video Links</div><div style="font-size:.76rem;color:var(--muted);line-height:1.4;margin-top:.1rem">Curated revision video resources</div></div>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--border-lt);border-radius:10px;padding:.75rem 1rem;display:flex;align-items:flex-start;gap:.6rem">
+                <span style="font-size:1.2rem;flex-shrink:0">📌</span>
+                <div><div style="font-weight:700;font-size:.85rem">Study Guides</div><div style="font-size:.76rem;color:var(--muted);line-height:1.4;margin-top:.1rem">Teacher-prepared study summaries</div></div>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--border-lt);border-radius:10px;padding:.75rem 1rem;display:flex;align-items:flex-start;gap:.6rem">
+                <span style="font-size:1.2rem;flex-shrink:0">⭐</span>
+                <div><div style="font-weight:700;font-size:.85rem">Flashcards</div><div style="font-size:.76rem;color:var(--muted);line-height:1.4;margin-top:.1rem">Quick-recall revision flashcards</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- end tabRevision -->
+
+    </section><!-- end s-papers -->
+
+    <!-- ════ EXAM BUILDER ════ -->
+    <section id="s-exambuilder" class="sec">
+      <div class="ph">
+        <h2>✏️ Exam Builder</h2>
+        <p>Create professional exam papers with AI-powered question generation, PDF export, and marking schemes.</p>
+      </div>
+
+      <!-- Exam Builder Tab Bar -->
+      <div class="tab-bar" id="ebTabBar">
+        <button class="tb active" onclick="openEBTab('tabEBCreate',this)">✏️ Create Exam</button>
+        <button class="tb" onclick="openEBTab('tabEBSaved',this)">📁 Saved Exams</button>
+        <button class="tb" onclick="openEBTab('tabEBAIGen',this)">🤖 AI Generator</button>
+        <button class="tb" onclick="openEBTab('tabEBMarking',this)">✅ Marking Scheme</button>
+      </div>
+
+      <!-- ─── CREATE EXAM TAB ──────────────────────────── -->
+      <div id="tabEBCreate" class="tab-panel active">
+        <!-- Wizard Steps -->
+        <div class="eb-wizard-steps">
+          <div class="eb-step active" data-step="1" onclick="ebGoToStep(1)"><span class="eb-step-num">1</span><span>Details</span></div>
+          <div class="eb-divider"></div>
+          <div class="eb-step" data-step="2" onclick="ebGoToStep(2)"><span class="eb-step-num">2</span><span>Sections</span></div>
+          <div class="eb-divider"></div>
+          <div class="eb-step" data-step="3" onclick="ebGoToStep(3)"><span class="eb-step-num">3</span><span>Questions</span></div>
+          <div class="eb-divider"></div>
+          <div class="eb-step" data-step="4" onclick="ebGoToStep(4)"><span class="eb-step-num">4</span><span>Preview &amp; Export</span></div>
+        </div>
+
+        <!-- Step 1: Exam Details -->
+        <div class="eb-wizard-content active" id="eb-step-1">
+          <div class="card">
+            <h3 style="padding:1rem 1.25rem .5rem;font-size:1rem">ℹ️ Exam Information</h3>
+            <div class="frow c3" style="padding:.75rem 1.25rem">
+              <div class="fg"><label>School Name *</label><input type="text" id="eb-schoolName" placeholder="e.g., Nakuru Boys High School"/></div>
+              <div class="fg"><label>Subject *</label><input type="text" id="eb-subject" placeholder="e.g., Mathematics, Biology"/></div>
+              <div class="fg"><label>Class / Form *</label><input type="text" id="eb-classLevel" placeholder="e.g., Form 2, Grade 8"/></div>
+              <div class="fg"><label>Exam Type *</label>
+                <select id="eb-examType">
+                  <option value="Opener">Opener Exam</option>
+                  <option value="Midterm" selected>Midterm Exam</option>
+                  <option value="Endterm">Endterm Exam</option>
+                  <option value="CATS">CATS</option>
+                  <option value="Mock">Mock Exam</option>
+                </select>
+              </div>
+              <div class="fg"><label>Duration</label><input type="text" id="eb-duration" placeholder="e.g., 2 Hours 30 Minutes"/></div>
+              <div class="fg"><label>Date</label><input type="date" id="eb-examDate"/></div>
+              <div class="fg"><label>Term</label>
+                <select id="eb-term"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select>
+              </div>
+              <div class="fg"><label>Year</label><input type="number" id="eb-year" value="2025" min="2020" max="2035"/></div>
+            </div>
+            <!-- Live Preview -->
+            <div class="eb-header-preview" id="ebHeaderPreview">
+              <div class="eb-preview-lbl">LIVE PREVIEW</div>
+              <div class="eb-prev-school" id="eb-prev-school">SCHOOL NAME</div>
+              <div class="eb-prev-subject" id="eb-prev-subject">SUBJECT – CLASS</div>
+              <div class="eb-prev-type" id="eb-prev-type">EXAM TYPE</div>
+              <div class="eb-prev-meta" id="eb-prev-meta">TIME: — | DATE: —</div>
+              <hr style="border:1.5px solid #000;margin:.5rem 0 0"/>
+            </div>
+          </div>
+          <!-- Instructions -->
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;border-bottom:1px solid var(--border-lt)">
+              <h3 style="font-size:1rem">📋 Instructions</h3>
+              <button class="btn btn-outline btn-sm" onclick="ebAutoInstructions()">✨ Auto-Generate</button>
+            </div>
+            <div id="ebInstructionsList" style="padding:.5rem 1.25rem">
+              <div class="eb-inst-item">
+                <input type="text" placeholder="Add instruction..." class="eb-inst-input"/>
+                <button class="btn btn-sm" style="padding:4px 8px;color:var(--danger)" onclick="this.closest('.eb-inst-item').remove()">✕</button>
+              </div>
+            </div>
+            <div style="padding:.5rem 1.25rem 1rem">
+              <button class="btn btn-outline btn-sm" onclick="ebAddInstruction()">➕ Add Instruction</button>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:.5rem">
+            <button class="btn btn-primary" onclick="ebGoToStep(2)">Next: Sections →</button>
+          </div>
+        </div>
+
+        <!-- Step 2: Sections -->
+        <div class="eb-wizard-content" id="eb-step-2">
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;border-bottom:1px solid var(--border-lt)">
+              <h3 style="font-size:1rem">📂 Exam Sections</h3>
+              <button class="btn btn-primary btn-sm" onclick="ebAddSection()">➕ Add Section</button>
+            </div>
+            <div id="ebSectionsList" style="padding:.75rem 1.25rem"></div>
+            <div style="display:flex;justify-content:flex-end;align-items:center;gap:1rem;padding:.75rem 1.25rem;background:var(--bg);border-top:1px solid var(--border-lt)">
+              <span style="font-size:.9rem;color:var(--muted)">Total Marks:</span>
+              <strong id="ebTotalMarks" style="font-size:1.3rem;color:var(--primary)">0</strong>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:.5rem">
+            <button class="btn btn-outline" onclick="ebGoToStep(1)">← Back</button>
+            <button class="btn btn-primary" onclick="ebGoToStep(3)">Next: Questions →</button>
+          </div>
+        </div>
+
+        <!-- Step 3: Questions -->
+        <div class="eb-wizard-content" id="eb-step-3">
+          <div id="ebGenerateAllBanner" style="display:none;background:linear-gradient(135deg,#6366f115,#10b98115);border:1.5px solid #6366f130;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+            <div style="flex:1;min-width:200px">
+              <div style="font-weight:700;font-size:.95rem;color:var(--primary)">🤖 Generate All Sections at Once</div>
+              <div style="font-size:.78rem;color:var(--muted);margin-top:.2rem">AI generates questions for every section simultaneously.</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="ebOpenGenAllModal()">✨ Generate All Sections</button>
+          </div>
+          <div id="ebQuestionBuilderArea">
+            <div class="card" style="text-align:center;padding:2rem;color:var(--muted)">
+              <div style="font-size:2rem">📂</div>
+              <p>Add sections in Step 2 first</p>
+              <button class="btn btn-outline btn-sm" style="margin-top:.75rem" onclick="ebGoToStep(2)">Go to Sections</button>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:.5rem">
+            <button class="btn btn-outline" onclick="ebGoToStep(2)">← Back</button>
+            <button class="btn btn-primary" onclick="ebGoToStep(4)">Preview &amp; Export →</button>
+          </div>
+        </div>
+
+        <!-- Step 4: Preview & Export -->
+        <div class="eb-wizard-content" id="eb-step-4">
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;border-bottom:1px solid var(--border-lt);flex-wrap:wrap;gap:.5rem">
+              <h3 style="font-size:1rem">👁 Exam Preview</h3>
+              <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+                <button class="btn btn-danger btn-sm" onclick="ebExportPDF()">⬇ PDF</button>
+                <button class="btn btn-success btn-sm" onclick="ebSaveExam()">💾 Save Exam</button>
+              </div>
+            </div>
+            <div id="ebExamPreview" style="padding:1.5rem 2rem;background:#fff;font-family:'Times New Roman',serif"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:.5rem">
+            <button class="btn btn-outline" onclick="ebGoToStep(3)">← Back</button>
+            <button class="btn btn-success" onclick="ebSaveExam()">💾 Save Exam</button>
+          </div>
+        </div>
+      </div><!-- end tabEBCreate -->
+
+      <!-- ─── SAVED EXAMS TAB ───────────────────────────── -->
+      <div id="tabEBSaved" class="tab-panel">
+        <div class="card">
+          <div class="ctbar">
+            <h3>Saved Exams</h3>
+            <div style="display:flex;gap:.5rem;align-items:center">
+              <div class="search-box"><span>🔍</span><input type="text" placeholder="Search..." id="ebSavedSearch" oninput="ebRenderSavedExams()"/></div>
+              <button class="btn btn-primary btn-sm" onclick="openEBTab('tabEBCreate',document.querySelector('[onclick*=tabEBCreate]'));ebNewExam()">➕ New Exam</button>
+            </div>
+          </div>
+          <div id="ebSavedList" style="min-height:120px"></div>
+        </div>
+      </div>
+
+      <!-- ─── AI GENERATOR TAB ─────────────────────────── -->
+      <div id="tabEBAIGen" class="tab-panel">
+        <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:1.25rem">
+          <!-- Left config -->
+          <div class="card">
+            <h3 style="padding:.75rem 1.25rem .5rem;font-size:1rem">⚙️ Generation Settings</h3>
+            <div style="padding:.5rem 1.25rem">
+              <div class="fg" style="margin-bottom:.75rem"><label>Subject</label><input type="text" id="ebai-subject" placeholder="e.g., Biology, Mathematics"/></div>
+              <div class="fg" style="margin-bottom:.75rem"><label>Topic</label><input type="text" id="ebai-topic" placeholder="e.g., Cell Biology, Algebra"/></div>
+              <div class="fg" style="margin-bottom:.75rem"><label>Question Type</label>
+                <select id="ebai-type">
+                  <option value="mcq">Multiple Choice (MCQ)</option>
+                  <option value="structured">Structured Questions</option>
+                  <option value="essay">Essay Questions</option>
+                </select>
+              </div>
+              <div class="fg" style="margin-bottom:.75rem">
+                <label>Difficulty</label>
+                <div style="display:flex;gap:.5rem;margin-top:.35rem">
+                  <button class="btn btn-outline btn-sm ebai-diff active" data-diff="easy" onclick="ebSetDiff(this,'easy')">😊 Easy</button>
+                  <button class="btn btn-outline btn-sm ebai-diff" data-diff="medium" onclick="ebSetDiff(this,'medium')">🎯 Medium</button>
+                  <button class="btn btn-outline btn-sm ebai-diff" data-diff="hard" onclick="ebSetDiff(this,'hard')">🔥 Hard</button>
+                </div>
+              </div>
+              <div class="fg" style="margin-bottom:.75rem"><label>Number of Questions</label><input type="number" id="ebai-count" value="5" min="1" max="30"/></div>
+              <div class="fg" style="margin-bottom:.75rem">
+                <label>Notes / Content (Optional)</label>
+                <textarea id="ebai-notes" rows="5" placeholder="Paste notes, syllabus content, or chapter text here..."></textarea>
+              </div>
+              <button class="btn btn-primary" style="width:100%;justify-content:center" id="ebaiGenBtn" onclick="ebAIGenerate()">🤖 Generate Questions</button>
+            </div>
+          </div>
+          <!-- Right results -->
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;border-bottom:1px solid var(--border-lt)">
+              <h3 style="font-size:1rem">📋 Generated Questions</h3>
+              <button id="ebaiAddAllBtn" class="btn btn-success btn-sm" style="display:none" onclick="ebaiAddAllToExam()">➕ Add All to Exam</button>
+            </div>
+            <div id="ebaiResults" style="padding:1rem 1.25rem">
+              <div style="text-align:center;padding:2rem;color:var(--muted)">
+                <div style="font-size:2.5rem;margin-bottom:.75rem">🤖</div>
+                <p>Configure settings and click Generate Questions</p>
+                <p style="font-size:.8rem;margin-top:.3rem">AI will create curriculum-aligned questions instantly</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── MARKING SCHEME TAB ───────────────────────── -->
+      <div id="tabEBMarking" class="tab-panel">
+        <div class="card" style="margin-bottom:1.25rem">
+          <h3 style="padding:.75rem 1.25rem .5rem;font-size:1rem">📄 Generate Marking Scheme</h3>
+          <div style="padding:.5rem 1.25rem 1rem">
+            <div class="fg" style="margin-bottom:.75rem">
+              <label>Choose a Saved Exam</label>
+              <select id="ebMsSelect"><option value="">— Select an exam —</option></select>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="ebGenerateMarkingScheme()">✨ Generate Marking Scheme</button>
+          </div>
+        </div>
+        <div class="card" id="ebMsResult" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;border-bottom:1px solid var(--border-lt)">
+            <h3 style="font-size:1rem">✅ Marking Scheme</h3>
+            <button class="btn btn-danger btn-sm" onclick="ebExportMsPDF()">⬇ PDF</button>
+          </div>
+          <div id="ebMsContent" style="padding:1rem 1.25rem"></div>
+        </div>
+      </div>
+    </section><!-- end s-exambuilder -->
+
+    <!-- EB: AI Section Modal -->
+    <div id="ebAISectionModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:1rem">
+      <div style="background:var(--surface);border-radius:12px;width:min(560px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border-lt)">
+          <h3 style="font-size:1rem">🤖 AI Generate for Section <span id="ebAIModalSecName"></span></h3>
+          <button onclick="document.getElementById('ebAISectionModal').style.display='none'" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted)">✕</button>
+        </div>
+        <div style="padding:1rem 1.25rem">
+          <div class="fg" style="margin-bottom:.75rem"><label>Topic</label><input type="text" id="ebModal-topic" placeholder="e.g., Photosynthesis, Quadratic Equations"/></div>
+          <div class="fg" style="margin-bottom:.75rem"><label>Additional Notes (optional)</label><textarea id="ebModal-notes" rows="4" placeholder="Paste relevant content..."></textarea></div>
+          <div class="fg"><label>Difficulty</label>
+            <div style="display:flex;gap:.5rem;margin-top:.35rem">
+              <button class="btn btn-outline btn-sm eb-mdiff" data-diff="easy" onclick="ebSetModalDiff(this,'easy')">😊 Easy</button>
+              <button class="btn btn-outline btn-sm eb-mdiff active" data-diff="medium" onclick="ebSetModalDiff(this,'medium')">🎯 Medium</button>
+              <button class="btn btn-outline btn-sm eb-mdiff" data-diff="hard" onclick="ebSetModalDiff(this,'hard')">🔥 Hard</button>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.5rem;padding:.75rem 1.25rem;border-top:1px solid var(--border-lt)">
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('ebAISectionModal').style.display='none'">Cancel</button>
+          <button class="btn btn-primary btn-sm" onclick="ebGenForSection()">✨ Generate</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EB: Generate All Modal -->
+    <div id="ebGenAllModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:1rem">
+      <div style="background:var(--surface);border-radius:12px;width:min(540px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border-lt)">
+          <h3 style="font-size:1rem">✨ Generate All Sections</h3>
+          <button onclick="document.getElementById('ebGenAllModal').style.display='none'" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted)">✕</button>
+        </div>
+        <div style="padding:1rem 1.25rem">
+          <div class="fg" style="margin-bottom:.75rem"><label>Notes / Content</label><textarea id="ebGenAll-notes" rows="5" placeholder="Paste your notes, syllabus, or chapter content here..."></textarea></div>
+          <div class="fg" style="margin-bottom:.75rem"><label>Topics (comma-separated)</label><input type="text" id="ebGenAll-topics" placeholder="e.g., Cell Biology, DNA, Photosynthesis"/></div>
+          <div class="fg"><label>Difficulty</label>
+            <div style="display:flex;gap:.5rem;margin-top:.35rem">
+              <button class="btn btn-outline btn-sm eb-gadiff" data-diff="easy" onclick="ebSetGaDiff(this,'easy')">😊 Easy</button>
+              <button class="btn btn-outline btn-sm eb-gadiff active" data-diff="medium" onclick="ebSetGaDiff(this,'medium')">🎯 Medium</button>
+              <button class="btn btn-outline btn-sm eb-gadiff" data-diff="hard" onclick="ebSetGaDiff(this,'hard')">🔥 Hard</button>
+            </div>
+          </div>
+          <div id="ebGenAllPreview" style="margin-top:.75rem;padding:.75rem;background:var(--bg);border-radius:8px;font-size:.8rem;color:var(--muted)"></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.5rem;padding:.75rem 1.25rem;border-top:1px solid var(--border-lt)">
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('ebGenAllModal').style.display='none'">Cancel</button>
+          <button class="btn btn-primary btn-sm" onclick="ebDoGenAll()">✨ Generate All Sections</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EB: Math Modal -->
+    <div id="ebMathModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:1rem">
+      <div style="background:var(--surface);border-radius:12px;width:min(500px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border-lt)">
+          <h3 style="font-size:1rem">√ Insert Math Equation</h3>
+          <button onclick="document.getElementById('ebMathModal').style.display='none'" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted)">✕</button>
+        </div>
+        <div style="padding:1rem 1.25rem">
+          <div class="fg" style="margin-bottom:.75rem"><label>LaTeX Equation</label><input type="text" id="ebMathInput" placeholder="e.g., x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}" oninput="ebPreviewMath(this.value)"/></div>
+          <div id="ebMathPreview" style="padding:1rem;background:var(--bg);border-radius:8px;min-height:48px;text-align:center;font-size:1.1rem;border:1px solid var(--border-lt)">Preview here</div>
+          <div style="margin-top:.75rem">
+            <label style="font-size:.78rem;color:var(--muted);font-weight:600;display:block;margin-bottom:.35rem">Quick Insert</label>
+            <div style="display:flex;flex-wrap:wrap;gap:.35rem">
+              <button class="btn btn-outline btn-sm" onclick="ebInsertMathSnippet('\\\\frac{a}{b}')">Fraction</button>
+              <button class="btn btn-outline btn-sm" onclick="ebInsertMathSnippet('\\\\sqrt{x}')">√</button>
+              <button class="btn btn-outline btn-sm" onclick="ebInsertMathSnippet('x^{2}')">x²</button>
+              <button class="btn btn-outline btn-sm" onclick="ebInsertMathSnippet('\\\\sum_{i=1}^{n}')">Σ</button>
+              <button class="btn btn-outline btn-sm" onclick="ebInsertMathSnippet('\\\\int_{a}^{b}')">∫</button>
+              <button class="btn btn-outline btn-sm" onclick="ebInsertMathSnippet('\\\\pi')">π</button>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.5rem;padding:.75rem 1.25rem;border-top:1px solid var(--border-lt)">
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('ebMathModal').style.display='none'">Cancel</button>
+          <button class="btn btn-primary btn-sm" onclick="ebInsertMathToQuestion()">Insert Equation</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EB: Sub-parts Modal -->
+    <div id="ebSubPartsModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:1rem">
+      <div style="background:var(--surface);border-radius:12px;width:min(520px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border-lt)">
+          <h3 style="font-size:1rem">≡ Edit Sub-Parts</h3>
+          <button onclick="document.getElementById('ebSubPartsModal').style.display='none'" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted)">✕</button>
+        </div>
+        <div style="padding:1rem 1.25rem">
+          <div id="ebSubPartsList"></div>
+          <button class="btn btn-outline btn-sm" onclick="ebAddSubPart()">➕ Add Sub-Part</button>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.5rem;padding:.75rem 1.25rem;border-top:1px solid var(--border-lt)">
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('ebSubPartsModal').style.display='none'">Cancel</button>
+          <button class="btn btn-primary btn-sm" onclick="ebSaveSubParts()">Save Sub-Parts</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EB: Loading overlay -->
+    <div id="ebLoadingOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
+      <div style="background:var(--surface);padding:2rem 2.5rem;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:1rem;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+        <div style="width:40px;height:40px;border:3px solid var(--border-lt);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite"></div>
+        <div id="ebLoadingText" style="font-size:.95rem;font-weight:600;color:var(--muted)">Processing...</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══ MODAL ═══ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBox">
+    <div class="modal-hd">
+      <h3 id="modalTitle">Modal</h3>
+      <button class="modal-x" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modalBody"></div>
+    <div class="modal-ft" id="modalFt"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="script.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof initApp === 'function') initApp();
+});
+</script>
+
+<!-- Mobile bottom navigation (phones only, scrollable) -->
+<nav class="mobile-bottom-nav" id="mobileBottomNav">
+  <a class="mbn-item active" data-s="dashboard"   onclick="go('dashboard',this);mbnActivate(this)"><i>🏠</i><span>Home</span></a>
+  <a class="mbn-item"        data-s="students"    onclick="go('students',this);mbnActivate(this)"><i>🎓</i><span>Students</span></a>
+  <a class="mbn-item"        data-s="teachers"    onclick="go('teachers',this);mbnActivate(this)"><i>👨‍🏫</i><span>Teachers</span></a>
+  <a class="mbn-item"        data-s="classes"     onclick="go('classes',this);mbnActivate(this)"><i>🏫</i><span>Classes</span></a>
+  <a class="mbn-item"        data-s="subjects"    onclick="go('subjects',this);mbnActivate(this)"><i>📚</i><span>Subjects</span></a>
+  <a class="mbn-item"        data-s="timetable"   onclick="go('timetable',this);mbnActivate(this)"><i>🕐</i><span>Timetable</span></a>
+  <a class="mbn-item"        data-s="exams"       onclick="go('exams',this);mbnActivate(this)"><i>📝</i><span>Exams</span></a>
+  <a class="mbn-item"        data-s="exambuilder" onclick="go('exambuilder',this);mbnActivate(this)"><i>✏️</i><span>Builder</span></a>
+  <a class="mbn-item"        data-s="reports"     onclick="go('reports',this);mbnActivate(this)"><i>📄</i><span>Reports</span></a>
+  <a class="mbn-item"        data-s="papers"      onclick="go('papers',this);mbnActivate(this)"><i>📂</i><span>Papers</span></a>
+  <a class="mbn-item"        data-s="fees"        onclick="go('fees',this);mbnActivate(this)"><i>💰</i><span>Fees</span></a>
+  <a class="mbn-item"        data-s="messaging"   onclick="go('messaging',this);mbnActivate(this)"><i>💬</i><span>Messaging</span></a>
+  <a class="mbn-item mbn-yellow" data-s="settings" onclick="go('settings',this);mbnActivate(this)"><i>🛠️</i><span>Settings</span></a>
+</nav>
+<script>
+function mbnActivate(el) {
+  document.querySelectorAll('.mbn-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+}
+// Keep sidebar nav and bottom nav in sync
+const _origGo = window.go;
+if (typeof window.go === 'function') {
+  window.go = function(sec, el) {
+    _origGo(sec, el);
+    document.querySelectorAll('.mbn-item').forEach(i => {
+      i.classList.toggle('active', i.dataset.s === sec);
+    });
+  };
+}
+</script>
+</body>
+</html>
