@@ -3134,30 +3134,49 @@ function generateReport() {
       finalCT = generateCTComment(d.mean, d.mGrade.grade, stu.gender, stu.name, d.streamRank, stuList.length);
       finalPR = generatePrincipalComment(d.mean, d.mGrade.grade, d.overallRank, students.length);
     }
-    // Auto-lookup fee balance per student — use manual term/year override if set
+    // Auto-lookup fee balance per student from fee records
+    loadFees();
     let autoFeeBalance = '';
     let autoFeeStatus  = '';
-    let autoFeeNextTerm = feeNextTerm; // start with manual override
+    let autoFeeNextTerm = feeNextTerm;
     const feeLookupTerm = rpTermOverride || (d.exam?.term) || '';
     const feeLookupYear = rpYearOverride || (d.exam?.year ? String(d.exam.year) : '');
-    if (feeLookupTerm && feeLookupYear) {
-      const feeData = getStudentFeeStatus(stu.id, feeLookupTerm, feeLookupYear);
-      if (feeData.balance !== null) {
-        autoFeeBalance = feeData.balance;
-        autoFeeStatus  = feeData.status;
-      }
-      // Auto-lookup next-term fee from structures if not manually overridden
-      if (feeNextTerm === '') {
-        loadFees();
-        const termMap = {'Term 1':'Term 2','Term 2':'Term 3','Term 3':'Term 1'};
-        const nxtTerm = termMap[feeLookupTerm] || feeLookupTerm;
-        const nxtYear = feeLookupTerm==='Term 3' ? String(parseInt(feeLookupYear)+1) : feeLookupYear;
-        const struct  = feeStructures.find(f => f.classId===stu.classId && f.term===nxtTerm && String(f.year)===nxtYear);
-        if (struct) autoFeeNextTerm = struct.totalFee;
+
+    // Primary: exact match for the exam's term/year
+    const exactRec = feeLookupTerm && feeLookupYear
+      ? feeRecords.find(r => r.studentId===stu.id && r.term===feeLookupTerm && String(r.year)===feeLookupYear)
+      : null;
+
+    if (exactRec) {
+      const bal = getRecordBalance(exactRec);
+      autoFeeBalance = bal;
+      autoFeeStatus  = bal <= 0 ? 'FEES CLEARED ✅' : `BALANCE: KES ${bal.toLocaleString()}`;
+    } else {
+      // Fallback: most recent fee record for this student
+      const stuRecs = feeRecords.filter(r => r.studentId===stu.id);
+      if (stuRecs.length) {
+        // Sort by year desc, then term desc (Term 3 > Term 2 > Term 1)
+        const termOrder = {'Term 1':1,'Term 2':2,'Term 3':3};
+        stuRecs.sort((a,b) => {
+          const yd = parseInt(b.year) - parseInt(a.year);
+          if (yd !== 0) return yd;
+          return (termOrder[b.term]||0) - (termOrder[a.term]||0);
+        });
+        const latestRec = stuRecs[0];
+        const bal = getRecordBalance(latestRec);
+        autoFeeBalance = bal;
+        autoFeeStatus  = bal <= 0 ? 'FEES CLEARED ✅' : `BALANCE: KES ${bal.toLocaleString()}`;
       }
     }
-    // feeBalance input is a fallback only — if auto-lookup found nothing, use manual default
-    if (autoFeeBalance === '' && feeBalance !== '') autoFeeBalance = feeBalance;
+
+    // Next-term fee auto-lookup
+    if (autoFeeNextTerm === '' && feeLookupTerm && feeLookupYear) {
+      const termMap = {'Term 1':'Term 2','Term 2':'Term 3','Term 3':'Term 1'};
+      const nxtTerm = termMap[feeLookupTerm] || feeLookupTerm;
+      const nxtYear = feeLookupTerm==='Term 3' ? String(parseInt(feeLookupYear)+1) : feeLookupYear;
+      const struct  = feeStructures.find(f => f.classId===stu.classId && f.term===nxtTerm && String(f.year)===nxtYear);
+      if (struct) autoFeeNextTerm = struct.totalFee;
+    }
     return buildReportHTML(d, finalCT, finalPR, nextOpen, schoolClosed, autoFeeBalance, autoFeeNextTerm, autoFeeStatus);
   }).join('');
 
@@ -3843,31 +3862,41 @@ function downloadAllReportsPDF() {
       const afterPR = afterCTSig + 5 + prLines.length*4.5 + 3;
       doc.text('Signature: ……………………………  Date: …………………', 14, afterPR);
 
-      // Fee info — per-student auto-lookup for this term, fall back to global manual override
+      // Fee info — per-student balance from fee records
+      loadFees();
       const rpTermOverride2 = document.getElementById('rpTerm')?.value || '';
       const rpYearOverride2 = document.getElementById('rpYear')?.value || '';
       const feeLookupTerm2 = rpTermOverride2 || (d.exam?.term) || '';
       const feeLookupYear2 = rpYearOverride2 || (d.exam?.year ? String(d.exam.year) : '');
-      let stuFeeBalance  = ''; // will be filled by auto-lookup; feeBalance input is fallback only
+      let stuFeeBalance  = '';
       let stuFeeNextTerm = feeNextTerm;
-      if (feeLookupTerm2 && feeLookupYear2) {
-        {
-          // Auto-lookup this student's balance for the current exam term
-          loadFees();
-          const feeData = getStudentFeeStatus(stu.id, feeLookupTerm2, feeLookupYear2);
-          if (feeData.balance !== null) stuFeeBalance = String(feeData.balance);
-          // feeBalance input is a fallback — only use if auto-lookup found nothing
-          if (stuFeeBalance === '' && feeBalance !== '') stuFeeBalance = feeBalance;
+
+      // Primary: exact match for exam term/year
+      const exactRec2 = feeLookupTerm2 && feeLookupYear2
+        ? feeRecords.find(r => r.studentId===stu.id && r.term===feeLookupTerm2 && String(r.year)===feeLookupYear2)
+        : null;
+      if (exactRec2) {
+        stuFeeBalance = String(getRecordBalance(exactRec2));
+      } else {
+        // Fallback: most recent fee record for this student
+        const stuRecs2 = feeRecords.filter(r => r.studentId===stu.id);
+        if (stuRecs2.length) {
+          const termOrder2 = {'Term 1':1,'Term 2':2,'Term 3':3};
+          stuRecs2.sort((a,b) => {
+            const yd = parseInt(b.year) - parseInt(a.year);
+            if (yd !== 0) return yd;
+            return (termOrder2[b.term]||0) - (termOrder2[a.term]||0);
+          });
+          stuFeeBalance = String(getRecordBalance(stuRecs2[0]));
         }
-        if (feeNextTerm === '') {
-          // Auto-lookup next-term fee amount from fee structures
-          loadFees();
-          const termMap = {'Term 1':'Term 2','Term 2':'Term 3','Term 3':'Term 1'};
-          const nxtTerm = termMap[feeLookupTerm2] || feeLookupTerm2;
-          const nxtYear = feeLookupTerm2==='Term 3' ? String(parseInt(feeLookupYear2)+1) : feeLookupYear2;
-          const struct  = feeStructures.find(f => f.classId===stu.classId && f.term===nxtTerm && String(f.year)===nxtYear);
-          if (struct) stuFeeNextTerm = String(struct.totalFee);
-        }
+      }
+      // Next-term fee auto-lookup
+      if (stuFeeNextTerm === '' && feeLookupTerm2 && feeLookupYear2) {
+        const termMap2 = {'Term 1':'Term 2','Term 2':'Term 3','Term 3':'Term 1'};
+        const nxtTerm2 = termMap2[feeLookupTerm2] || feeLookupTerm2;
+        const nxtYear2 = feeLookupTerm2==='Term 3' ? String(parseInt(feeLookupYear2)+1) : feeLookupYear2;
+        const struct2  = feeStructures.find(f => f.classId===stu.classId && f.term===nxtTerm2 && String(f.year)===nxtYear2);
+        if (struct2) stuFeeNextTerm = String(struct2.totalFee);
       }
       if (stuFeeBalance !== '') {
         const afterPRSig = afterPR + 8;
