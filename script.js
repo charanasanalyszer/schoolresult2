@@ -1020,6 +1020,10 @@ function populateReportDropdowns() {
     const sorted = [...students].sort((a,b)=>a.name.localeCompare(b.name));
     rpStu.innerHTML = '<option value="">— All Students —</option>' + sorted.map(s=>`<option value="${s.id}">${s.name} (${s.adm})</option>`).join('');
   }
+  const rpClass = document.getElementById('rpClass');
+  if (rpClass) {
+    rpClass.innerHTML = '<option value="">— All Classes —</option>' + classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  }
   // Populate rpYear with years from exams + current year
   const rpYear = document.getElementById('rpYear');
   if (rpYear) {
@@ -1028,8 +1032,25 @@ function populateReportDropdowns() {
   }
 }
 
-// Called when exam selector changes — sync term/year dropdowns
-function onRpExamChange() {
+// Called when class filter changes — cascade to stream and student dropdowns
+function onRpClassChange() {
+  const classId = document.getElementById('rpClass')?.value || '';
+  // Update stream dropdown to only show streams in selected class
+  const rpStream = document.getElementById('rpStream');
+  if (rpStream) {
+    const relevantStreams = classId ? streams.filter(s=>s.classId===classId) : streams;
+    rpStream.innerHTML = '<option value="">— All Streams —</option>' + relevantStreams.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  }
+  // Update student dropdown to only show students in selected class
+  const rpStu = document.getElementById('rpStudent');
+  if (rpStu) {
+    const sorted = [...students].filter(s=>!classId||s.classId===classId).sort((a,b)=>a.name.localeCompare(b.name));
+    rpStu.innerHTML = '<option value="">— All Students —</option>' + sorted.map(s=>`<option value="${s.id}">${s.name} (${s.adm})</option>`).join('');
+  }
+  onRpStudentChange();
+}
+
+
   const examId = document.getElementById('rpExam')?.value;
   const exam   = examId ? exams.find(e => e.id === examId) : null;
   const rpTerm = document.getElementById('rpTerm');
@@ -1581,7 +1602,9 @@ let anCharts = {};
 // Build a scored+ranked array for an exam, optionally filtered to a stream
 function buildMeritData(examId, filterStreamId) {
   const exam      = exams.find(e => e.id === examId); if (!exam) return [];
-  const examMarks = marks.filter(m => m.examId === examId);
+  const isConsolidated = exam.category === 'consolidated';
+  const sourceExamObjs = isConsolidated ? (exam.sourceExamIds||[]).map(id=>exams.find(e=>e.id===id)).filter(Boolean) : [];
+  const examMarks = isConsolidated ? [] : marks.filter(m => m.examId === examId);
   const totalSubs = exam.subjectIds.length || 1;
   let   stuList   = students.filter(s => {
     // Only include students who belong to a class/stream for this exam
@@ -1591,13 +1614,34 @@ function buildMeritData(examId, filterStreamId) {
   if (filterStreamId) stuList = stuList.filter(s => s.streamId === filterStreamId);
 
   const scored = stuList.map(stu => {
-    const stuMarks = examMarks.filter(m => m.studentId === stu.id);
-    if (!stuMarks.length) return null;
-    const total  = stuMarks.reduce((a,m) => a+m.score, 0);
+    let total, pts;
+    if (isConsolidated && sourceExamObjs.length > 0) {
+      // For consolidated exams: average each subject across source exams
+      let hasAnyScore = false;
+      const subTotals = exam.subjectIds.map(sid => {
+        const sub = subjects.find(s=>s.id===sid);
+        const scores = sourceExamObjs.map(src => {
+          const mk = marks.find(m=>m.examId===src.id&&m.studentId===stu.id&&m.subjectId===sid);
+          return mk ? mk.score : null;
+        }).filter(sc=>sc!==null);
+        if (scores.length) hasAnyScore = true;
+        return scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : 0;
+      });
+      if (!hasAnyScore) return null;
+      total = parseFloat(subTotals.reduce((a,b)=>a+b,0).toFixed(1));
+      pts   = exam.subjectIds.reduce((acc,sid,i) => {
+        const sub = subjects.find(s=>s.id===sid);
+        return acc + getGrade(subTotals[i], sub?.max||100).points;
+      }, 0);
+    } else {
+      const stuMarks = examMarks.filter(m => m.studentId === stu.id);
+      if (!stuMarks.length) return null;
+      total = stuMarks.reduce((a,m) => a+m.score, 0);
+      pts   = stuMarks.reduce((a,m) => a + getGrade(m.score, subjects.find(s=>s.id===m.subjectId)?.max||100).points, 0);
+    }
     const mean   = total / totalSubs;
     const maxAvg = (exam.subjectIds.map(sid=>subjects.find(s=>s.id===sid)?.max||100).reduce((a,b)=>a+b,0)/totalSubs) || 100;
     const g      = getMeanGrade(mean / maxAvg * 8);
-    const pts    = stuMarks.reduce((a,m) => a + getGrade(m.score, subjects.find(s=>s.id===m.subjectId)?.max||100).points, 0);
     return { ...stu, total, mean, grade:g, points:pts };
   }).filter(Boolean).sort((a,b) => b.total - a.total);
 
@@ -1696,7 +1740,9 @@ function buildSubjectAnalysisHTML(examId, scopeStudentIds) {
 // Build the HTML rows for a merit list table (shared by overall + per-stream)
 function buildMeritTableHTML(scored, examId, showStreamCol) {
   const exam       = exams.find(e => e.id === examId); if (!exam) return '';
-  const examMarks  = marks.filter(m => m.examId === examId);
+  const isConsolidated = exam.category === 'consolidated';
+  const sourceExamObjs = isConsolidated ? (exam.sourceExamIds||[]).map(id=>exams.find(e=>e.id===id)).filter(Boolean) : [];
+  const examMarks  = isConsolidated ? [] : marks.filter(m => m.examId === examId);
   const examSubIds = exam.subjectIds;
   const examSubs   = examSubIds.map(sid => subjects.find(s=>s.id===sid)).filter(Boolean);
 
@@ -1713,10 +1759,21 @@ function buildMeritTableHTML(scored, examId, showStreamCol) {
   const bodyRows = scored.length ? scored.map(s => {
     const stream   = streams.find(x=>x.id===s.streamId);
     const subCells = examSubs.map(sub => {
-      const mk = examMarks.find(m=>m.studentId===s.id && m.subjectId===sub.id);
-      const g  = mk ? getGrade(mk.score, sub.max) : null;
-      return `<td style="text-align:center;font-size:.78rem">${mk
-        ? `<span style="font-weight:600">${mk.score}</span><br><span style="font-size:.62rem;color:var(--muted)">${g?.grade||''}</span>`
+      let score, g;
+      if (isConsolidated && sourceExamObjs.length > 0) {
+        const scores = sourceExamObjs.map(src => {
+          const mk = marks.find(m=>m.examId===src.id&&m.studentId===s.id&&m.subjectId===sub.id);
+          return mk ? mk.score : null;
+        }).filter(sc=>sc!==null);
+        score = scores.length ? parseFloat((scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1)) : null;
+        g = score !== null ? getGrade(score, sub.max) : null;
+      } else {
+        const mk = examMarks.find(m=>m.studentId===s.id && m.subjectId===sub.id);
+        score = mk ? mk.score : null;
+        g  = mk ? getGrade(mk.score, sub.max) : null;
+      }
+      return `<td style="text-align:center;font-size:.78rem">${score !== null
+        ? `<span style="font-weight:600">${score}</span><br><span style="font-size:.62rem;color:var(--muted)">${g?.grade||''}</span>`
         : '—'}</td>`;
     }).join('');
     return `<tr>
@@ -1743,11 +1800,13 @@ function printMeritList() { window.print(); }
 function exportMeritExcel() {
   const examId = document.getElementById('mlExam').value; if (!examId) { showToast('Select an exam','error'); return; }
   const exam   = exams.find(e=>e.id===examId);
+  const isConsolidated = exam?.category === 'consolidated';
+  const sourceExamObjs = isConsolidated ? (exam.sourceExamIds||[]).map(id=>exams.find(e=>e.id===id)).filter(Boolean) : [];
   const mlType = document.getElementById('mlType')?.value || 'class_overall_and_stream';
   const streamFilter = mlType === 'class_stream' ? (document.getElementById('mlStream')?.value||null) : null;
   const scored = buildMeritData(examId, streamFilter);
   const examSubs = (exam?.subjectIds||[]).map(sid=>subjects.find(s=>s.id===sid)).filter(Boolean);
-  const examMarks= marks.filter(m=>m.examId===examId);
+  const examMarks= isConsolidated ? [] : marks.filter(m=>m.examId===examId);
   const wb = XLSX.utils.book_new();
 
   const rows = scored.map(s => {
@@ -1759,8 +1818,13 @@ function exportMeritExcel() {
       Stream: stream?.name||'',
     };
     examSubs.forEach(sub => {
-      const mk = examMarks.find(m=>m.studentId===s.id&&m.subjectId===sub.id);
-      row[sub.code] = mk ? mk.score : '';
+      if (isConsolidated && sourceExamObjs.length > 0) {
+        const scores = sourceExamObjs.map(src=>{const mk=marks.find(m=>m.examId===src.id&&m.studentId===s.id&&m.subjectId===sub.id);return mk?mk.score:null;}).filter(sc=>sc!==null);
+        row[sub.code] = scores.length ? parseFloat((scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1)) : '';
+      } else {
+        const mk = examMarks.find(m=>m.studentId===s.id&&m.subjectId===sub.id);
+        row[sub.code] = mk ? mk.score : '';
+      }
     });
     row['Total']  = s.total;
     row['Mean']   = s.mean.toFixed(2);
@@ -1771,19 +1835,26 @@ function exportMeritExcel() {
   const ws = XLSX.utils.json_to_sheet(rows);
   XLSX.utils.book_append_sheet(wb, ws, 'Merit List');
 
-  // Subject analysis sheet
+  // Subject analysis sheet — for consolidated use averaged scores
   const gs = getActiveGradingSystem();
   const gradeKeys = gs.bands.map(b=>b.grade);
   const subRows = (exam?.subjectIds||[]).map(sid=>{
     const sub = subjects.find(s=>s.id===sid); if(!sub) return null;
-    const subMarks = examMarks.filter(m=>m.subjectId===sid);
-    const vals = subMarks.map(m=>m.score);
+    let vals;
+    if (isConsolidated && sourceExamObjs.length > 0) {
+      vals = scored.map(s => {
+        const scores = sourceExamObjs.map(src=>{const mk=marks.find(m=>m.examId===src.id&&m.studentId===s.id&&m.subjectId===sid);return mk?mk.score:null;}).filter(sc=>sc!==null);
+        return scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : null;
+      }).filter(v=>v!==null);
+    } else {
+      vals = examMarks.filter(m=>m.subjectId===sid).map(m=>m.score);
+    }
     const mn   = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
     const dist = {};
     gradeKeys.forEach(g=>dist[g]=0);
-    subMarks.forEach(m=>{ const g=getGrade(m.score,sub.max); if(dist[g.grade]!==undefined)dist[g.grade]++; });
-    const maleV  = subMarks.filter(m=>{const s=students.find(x=>x.id===m.studentId);return s&&s.gender==='M';}).map(m=>m.score);
-    const femV   = subMarks.filter(m=>{const s=students.find(x=>x.id===m.studentId);return s&&s.gender==='F';}).map(m=>m.score);
+    vals.forEach(v=>{ const g=getGrade(v,sub.max); if(dist[g.grade]!==undefined)dist[g.grade]++; });
+    const maleV  = scored.filter(s=>s.gender==='M').map(s=>{ /* get score */ const sc = isConsolidated && sourceExamObjs.length > 0 ? (()=>{const ss=sourceExamObjs.map(src=>{const mk=marks.find(m=>m.examId===src.id&&m.studentId===s.id&&m.subjectId===sid);return mk?mk.score:null;}).filter(sc=>sc!==null);return ss.length?ss.reduce((a,b)=>a+b,0)/ss.length:null;})() : (examMarks.find(m=>m.studentId===s.id&&m.subjectId===sid)?.score??null); return sc; }).filter(v=>v!==null);
+    const femV   = scored.filter(s=>s.gender==='F').map(s=>{ const sc = isConsolidated && sourceExamObjs.length > 0 ? (()=>{const ss=sourceExamObjs.map(src=>{const mk=marks.find(m=>m.examId===src.id&&m.studentId===s.id&&m.subjectId===sid);return mk?mk.score:null;}).filter(sc=>sc!==null);return ss.length?ss.reduce((a,b)=>a+b,0)/ss.length:null;})() : (examMarks.find(m=>m.studentId===s.id&&m.subjectId===sid)?.score??null); return sc; }).filter(v=>v!==null);
     const row = { Subject:sub.name, Entries:vals.length, Mean:mn.toFixed(1), Highest:vals.length?Math.max(...vals):'', Lowest:vals.length?Math.min(...vals):'' };
     gradeKeys.forEach(g=>row[g]=dist[g]);
     row['Male Mean']   = maleV.length   ? (maleV.reduce((a,b)=>a+b,0)/maleV.length).toFixed(1) : '';
@@ -1804,11 +1875,21 @@ function exportMeritPDF() {
   try {
     const { jsPDF } = window.jspdf;
     const exam      = exams.find(e=>e.id===examId);
+    const isConsolidated = exam?.category === 'consolidated';
+    const sourceExamObjs = isConsolidated ? (exam.sourceExamIds||[]).map(id=>exams.find(e=>e.id===id)).filter(Boolean) : [];
     const mlType    = document.getElementById('mlType')?.value || 'class_overall_and_stream';
     const filterStr = mlType === 'class_stream' ? (document.getElementById('mlStream')?.value||null) : null;
     const scored    = buildMeritData(examId, filterStr||null);
     const examSubs  = (exam?.subjectIds||[]).map(sid=>subjects.find(s=>s.id===sid)).filter(Boolean);
-    const examMarks = marks.filter(m=>m.examId===examId);
+    const examMarks = isConsolidated ? [] : marks.filter(m=>m.examId===examId);
+    // Helper: get a student's averaged score for a subject (handles both regular & consolidated)
+    const getStuSubScore = (stuId, subId) => {
+      if (isConsolidated && sourceExamObjs.length > 0) {
+        const scores = sourceExamObjs.map(src=>{const mk=marks.find(m=>m.examId===src.id&&m.studentId===stuId&&m.subjectId===subId);return mk?mk.score:null;}).filter(sc=>sc!==null);
+        return scores.length ? parseFloat((scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1)) : null;
+      }
+      return examMarks.find(m=>m.studentId===stuId&&m.subjectId===subId)?.score??null;
+    };
     const gs        = getActiveGradingSystem();
     const gradeKeys = gs.bands.map(b=>b.grade);
     const sch       = settings;
@@ -1836,8 +1917,8 @@ function exportMeritPDF() {
     const meritBody = scored.map(s => {
       const stream = streams.find(x=>x.id===s.streamId);
       const subScores = examSubs.map(sub=>{
-        const mk=examMarks.find(m=>m.studentId===s.id&&m.subjectId===sub.id);
-        return mk ? String(mk.score) : '—';
+        const sc = getStuSubScore(s.id, sub.id);
+        return sc !== null ? String(sc) : '—';
       });
       return [s.overallRank, s.adm, s.name, s.gender, stream?.name||'—', '#'+s.streamRank,
               ...subScores, s.total, s.mean.toFixed(2), s.grade?.grade||'—', s.points];
@@ -1856,14 +1937,13 @@ function exportMeritPDF() {
     const subHead  = [['Subject','Count','Mean','High','Low', ...gradeKeys, 'Grade','♂ Mean','♀ Mean']];
     const subBody  = (exam?.subjectIds||[]).map(sid=>{
       const sub      = subjects.find(s=>s.id===sid); if(!sub) return null;
-      const subMarks = examMarks.filter(m=>m.subjectId===sid);
-      const vals     = subMarks.map(m=>m.score);
+      const vals     = scored.map(s=>getStuSubScore(s.id,sid)).filter(v=>v!==null);
       if (!vals.length) return null;
       const mn       = vals.reduce((a,b)=>a+b,0)/vals.length;
       const dist     = {}; gradeKeys.forEach(g=>dist[g]=0);
-      subMarks.forEach(m=>{const g=getGrade(m.score,sub.max);if(dist[g.grade]!==undefined)dist[g.grade]++;});
-      const mV = subMarks.filter(m=>{const s=students.find(x=>x.id===m.studentId);return s&&s.gender==='M';}).map(m=>m.score);
-      const fV = subMarks.filter(m=>{const s=students.find(x=>x.id===m.studentId);return s&&s.gender==='F';}).map(m=>m.score);
+      vals.forEach(v=>{const g=getGrade(v,sub.max);if(dist[g.grade]!==undefined)dist[g.grade]++;});
+      const mV = scored.filter(s=>s.gender==='M').map(s=>getStuSubScore(s.id,sid)).filter(v=>v!==null);
+      const fV = scored.filter(s=>s.gender==='F').map(s=>getStuSubScore(s.id,sid)).filter(v=>v!==null);
       const mMn = mV.length ? (mV.reduce((a,b)=>a+b,0)/mV.length).toFixed(1) : '—';
       const fMn = fV.length ? (fV.reduce((a,b)=>a+b,0)/fV.length).toFixed(1) : '—';
       const grd = getGrade(mn, sub.max);
@@ -1886,8 +1966,8 @@ function exportMeritPDF() {
       const sHead = [['#','Adm No','Name','G', ...examSubs.map(s=>s.code), 'Total','Mean','Grade','Pts']];
       const sBody = strScored.map(s=>{
         const subScores = examSubs.map(sub=>{
-          const mk=examMarks.find(m=>m.studentId===s.id&&m.subjectId===sub.id);
-          return mk ? String(mk.score) : '—';
+          const sc = getStuSubScore(s.id, sub.id);
+          return sc !== null ? String(sc) : '—';
         });
         return [s.overallRank, s.adm, s.name, s.gender, ...subScores, s.total, s.mean.toFixed(2), s.grade?.grade||'—', s.points];
       });
@@ -1902,14 +1982,13 @@ function exportMeritPDF() {
       const strStudentIds = strScored.map(s=>s.id);
       const strSubBody = (exam?.subjectIds||[]).map(sid=>{
         const sub = subjects.find(s=>s.id===sid); if(!sub) return null;
-        const subMarks = examMarks.filter(m=>m.subjectId===sid && strStudentIds.includes(m.studentId));
-        if (!subMarks.length) return null;
-        const vals = subMarks.map(m=>m.score);
+        const vals = strScored.map(s=>getStuSubScore(s.id,sid)).filter(v=>v!==null);
+        if (!vals.length) return null;
         const mn   = vals.reduce((a,b)=>a+b,0)/vals.length;
         const dist = {}; gradeKeys.forEach(g=>dist[g]=0);
-        subMarks.forEach(m=>{const g=getGrade(m.score,sub.max);if(dist[g.grade]!==undefined)dist[g.grade]++;});
-        const mV = subMarks.filter(m=>{const s=students.find(x=>x.id===m.studentId);return s&&s.gender==='M';}).map(m=>m.score);
-        const fV = subMarks.filter(m=>{const s=students.find(x=>x.id===m.studentId);return s&&s.gender==='F';}).map(m=>m.score);
+        vals.forEach(v=>{const g=getGrade(v,sub.max);if(dist[g.grade]!==undefined)dist[g.grade]++;});
+        const mV = strScored.filter(s=>s.gender==='M').map(s=>getStuSubScore(s.id,sid)).filter(v=>v!==null);
+        const fV = strScored.filter(s=>s.gender==='F').map(s=>getStuSubScore(s.id,sid)).filter(v=>v!==null);
         return [sub.name, vals.length, mn.toFixed(1), Math.max(...vals), Math.min(...vals),
                 ...gradeKeys.map(g=>dist[g]||''), getGrade(mn,sub.max).grade,
                 mV.length?(mV.reduce((a,b)=>a+b,0)/mV.length).toFixed(1):'—',
@@ -2929,17 +3008,16 @@ function buildReportHTML(data, ctRemarks, principalRemarks, nextOpen, schoolClos
   const rows = data.subjectRows.map((r,i)=>{
     if (data.isConsolidated && srcExams.length > 0) {
       const srcCols = (r.sourceScores||[]).map((sc,si)=>
-        `<td style="text-align:center">${sc !== null ? sc : '—'}</td>`
+        `<td style="text-align:center;padding:.18rem .3rem;font-size:.78rem">${sc !== null ? sc : '—'}</td>`
       ).join('');
       return `<tr>
-      <td>${i+1}</td>
-      <td>${r.name}</td>
-      <td style="text-align:center">${r.max}</td>
+      <td style="padding:.18rem .3rem;font-size:.78rem">${i+1}</td>
+      <td style="padding:.18rem .3rem;font-size:.78rem">${r.name}</td>
       ${srcCols}
-      <td style="text-align:center;font-weight:700;background:#f0fdf4">${r.score !== null ? r.score : '—'}</td>
-      <td style="text-align:center"><strong>${r.grade}</strong></td>
-      <td style="text-align:center">${r.points}</td>
-      <td>${r.label}</td>
+      <td style="text-align:center;font-weight:700;background:#f0fdf4;padding:.18rem .3rem;font-size:.78rem">${r.score !== null ? r.score : '—'}</td>
+      <td style="text-align:center;padding:.18rem .3rem;font-size:.78rem"><strong>${r.grade}</strong></td>
+      <td style="text-align:center;padding:.18rem .3rem;font-size:.78rem">${r.points}</td>
+      <td style="padding:.18rem .3rem;font-size:.72rem">${r.label}</td>
     </tr>`;
     } else {
       return `<tr>
@@ -2985,34 +3063,35 @@ function buildReportHTML(data, ctRemarks, principalRemarks, nextOpen, schoolClos
     <div class="rf-section">
       <div class="rf-section-title">Academic Performance</div>
       <div class="rf-section-body" style="padding:0">
-        <table class="rf-marks-table">
+        <table class="rf-marks-table" style="${data.isConsolidated && srcExams.length > 0 ? 'font-size:.78rem;' : ''}">
           <thead>
             <tr>
-              <th>#</th><th>Subject</th><th style="text-align:center">Out Of</th>
+              <th style="${data.isConsolidated && srcExams.length > 0 ? 'padding:.2rem .3rem;width:1.5rem' : ''}">#</th>
+              <th style="${data.isConsolidated && srcExams.length > 0 ? 'padding:.2rem .3rem' : ''}">Subject</th>
               ${data.isConsolidated && srcExams.length > 0
-                ? srcExams.map(e=>`<th style="text-align:center;font-size:.72rem">${e.name}</th>`).join('')
-                  + '<th style="text-align:center;background:#dcfce7">Average</th>'
-                : '<th style="text-align:center">Score</th>'}
-              <th style="text-align:center">Grade</th>
-              <th style="text-align:center">Points</th><th>Remarks</th>
+                ? srcExams.map(e=>`<th style="text-align:center;font-size:.68rem;padding:.2rem .3rem;white-space:nowrap">${e.name}</th>`).join('')
+                  + '<th style="text-align:center;background:#dcfce7;padding:.2rem .3rem">Avg</th>'
+                : '<th style="text-align:center">Out Of</th><th style="text-align:center">Score</th>'}
+              <th style="text-align:center${data.isConsolidated && srcExams.length > 0 ? ';padding:.2rem .3rem' : ''}">Grade</th>
+              <th style="text-align:center${data.isConsolidated && srcExams.length > 0 ? ';padding:.2rem .3rem' : ''}">Pts</th>
+              <th style="${data.isConsolidated && srcExams.length > 0 ? 'padding:.2rem .3rem' : ''}">Remarks</th>
             </tr>
           </thead>
           <tbody>
             ${rows}
             <tr class="total-row">
-              <td colspan="2" style="text-align:right">${data.isConsolidated ? 'AVERAGE TOTAL / MEAN' : 'TOTALS / MEAN'}</td>
-              <td style="text-align:center">${data.subjectRows.reduce((a,r)=>a+r.max,0)}</td>
+              <td colspan="2" style="text-align:right;${data.isConsolidated && srcExams.length > 0 ? 'padding:.2rem .3rem;font-size:.75rem' : ''}">${data.isConsolidated ? 'AVG TOTAL / MEAN' : 'TOTALS / MEAN'}</td>
               ${data.isConsolidated && srcExams.length > 0
                 ? srcExams.map((_,si)=>{
                     const colTotal = data.subjectRows.reduce((a,r)=>{
                       const sc=(r.sourceScores||[])[si]; return a+(sc!==null&&sc!==undefined?sc:0);
                     },0);
-                    return `<td style="text-align:center">${parseFloat(colTotal.toFixed(1))}</td>`;
-                  }).join('') + `<td style="text-align:center;font-weight:700;background:#f0fdf4">${parseFloat(data.total.toFixed(1))}</td>`
-                : `<td style="text-align:center">${data.total}</td>`}
-              <td style="text-align:center">${data.mGrade.grade}</td>
-              <td style="text-align:center">${data.totalPoints}</td>
-              <td>${data.mGrade.label}</td>
+                    return `<td style="text-align:center;padding:.2rem .3rem;font-size:.75rem">${parseFloat(colTotal.toFixed(1))}</td>`;
+                  }).join('') + `<td style="text-align:center;font-weight:700;background:#f0fdf4;padding:.2rem .3rem;font-size:.75rem">${parseFloat(data.total.toFixed(1))}</td>`
+                : `<td style="text-align:center">${data.subjectRows.reduce((a,r)=>a+r.max,0)}</td><td style="text-align:center">${data.total}</td>`}
+              <td style="text-align:center${data.isConsolidated && srcExams.length > 0 ? ';padding:.2rem .3rem;font-size:.75rem' : ''}">${data.mGrade.grade}</td>
+              <td style="text-align:center${data.isConsolidated && srcExams.length > 0 ? ';padding:.2rem .3rem;font-size:.75rem' : ''}">${data.totalPoints}</td>
+              <td style="${data.isConsolidated && srcExams.length > 0 ? 'padding:.2rem .3rem;font-size:.72rem' : ''}">${data.mGrade.label}</td>
             </tr>
           </tbody>
         </table>
@@ -3118,10 +3197,13 @@ function generateReport() {
   // Resolve effective term/year for fee auto-link (manual override > exam derived)
   const rpTermOverride = document.getElementById('rpTerm')?.value || '';
   const rpYearOverride = document.getElementById('rpYear')?.value || '';
+  const classId = document.getElementById('rpClass')?.value || '';
   if (!examId) { showToast('Select an exam','error'); return; }
 
   let stuList = stuId ? [students.find(s=>s.id===stuId)].filter(Boolean)
-    : streamId ? students.filter(s=>s.streamId===streamId) : [...students];
+    : streamId ? students.filter(s=>s.streamId===streamId)
+    : classId  ? students.filter(s=>s.classId===classId)
+    : [...students];
   stuList = stuList.sort((a,b)=>a.name.localeCompare(b.name));
 
   const area = document.getElementById('reportPreviewArea');
@@ -3755,8 +3837,11 @@ function downloadAllReportsPDF() {
 
   if (!examId) { showToast('Select an exam first','error'); return; }
 
+  const classId  = document.getElementById('rpClass')?.value || '';
   let stuList = stuId ? [students.find(s=>s.id===stuId)].filter(Boolean)
-    : streamId ? students.filter(s=>s.streamId===streamId) : [...students];
+    : streamId ? students.filter(s=>s.streamId===streamId)
+    : classId  ? students.filter(s=>s.classId===classId)
+    : [...students];
   stuList = stuList.sort((a,b)=>a.name.localeCompare(b.name));
 
   if (!stuList.length) { showToast('No students to generate reports for','warning'); return; }
@@ -3805,17 +3890,32 @@ function downloadAllReportsPDF() {
 
       // Marks table
       const gs = getActiveGradingSystem();
-      const tableHead = [['#','Subject','Out Of','Score','Grade','Points','Remarks']];
-      const tableBody = d.subjectRows.map((r,i)=>[i+1, r.name, r.max, r.score!==null?r.score:'—', r.grade, r.points, r.label]);
-      const totalRow  = ['','TOTALS / MEAN', d.subjectRows.reduce((a,r)=>a+r.max,0), d.total, d.mGrade.grade, d.totalPoints, d.mGrade.label];
+      let tableHead, tableBody, totalRow;
+      if (d.isConsolidated && d.sourceExamObjs && d.sourceExamObjs.length > 0) {
+        const srcNames = d.sourceExamObjs.map(e=>e.name);
+        tableHead = [['#','Subject', ...srcNames, 'Avg','Grade','Pts','Remarks']];
+        tableBody = d.subjectRows.map((r,i)=>[
+          i+1, r.name,
+          ...(r.sourceScores||[]).map(sc=>sc!==null?sc:'—'),
+          r.score!==null?r.score:'—', r.grade, r.points, r.label
+        ]);
+        const srcTotals = d.sourceExamObjs.map((_,si)=>
+          parseFloat(d.subjectRows.reduce((a,r)=>{const sc=(r.sourceScores||[])[si];return a+(sc!==null&&sc!==undefined?sc:0);},0).toFixed(1))
+        );
+        totalRow = ['','AVG TOTAL / MEAN', ...srcTotals, parseFloat(d.total.toFixed(1)), d.mGrade.grade, d.totalPoints, d.mGrade.label];
+      } else {
+        tableHead = [['#','Subject','Out Of','Score','Grade','Points','Remarks']];
+        tableBody = d.subjectRows.map((r,i)=>[i+1, r.name, r.max, r.score!==null?r.score:'—', r.grade, r.points, r.label]);
+        totalRow  = ['','TOTALS / MEAN', d.subjectRows.reduce((a,r)=>a+r.max,0), d.total, d.mGrade.grade, d.totalPoints, d.mGrade.label];
+      }
 
       doc.autoTable({
         startY: 44,
         head: tableHead,
         body: [...tableBody, totalRow],
         theme: 'striped',
-        styles: { fontSize:8, cellPadding:1.8 },
-        headStyles: { fillColor:[26,111,181], textColor:255, fontStyle:'bold' },
+        styles: { fontSize: d.isConsolidated ? 7 : 8, cellPadding: d.isConsolidated ? 1.2 : 1.8 },
+        headStyles: { fillColor:[26,111,181], textColor:255, fontStyle:'bold', fontSize: d.isConsolidated ? 7 : 8 },
         alternateRowStyles: { fillColor:[240,247,255] },
         didParseCell: (data) => {
           if (data.row.index === tableBody.length) {
