@@ -1663,16 +1663,48 @@ function buildMeritData(examId, filterStreamId) {
 // Build subject-analysis block (grade distribution + gender means per subject)
 function buildSubjectAnalysisHTML(examId, scopeStudentIds) {
   const exam      = exams.find(e => e.id === examId); if (!exam) return '';
-  const examMarks = marks.filter(m => m.examId === examId &&
+  const isConsolidated = exam.category === 'consolidated';
+  const sourceExamObjs = isConsolidated ? (exam.sourceExamIds||[]).map(id=>exams.find(e=>e.id===id)).filter(Boolean) : [];
+  const examMarks = isConsolidated ? [] : marks.filter(m => m.examId === examId &&
     (scopeStudentIds ? scopeStudentIds.includes(m.studentId) : true));
   const gs        = getActiveGradingSystem();
   const gradeKeys = gs.bands.map(b => b.grade);
 
+  // Helper: get averaged score for a student+subject on a consolidated exam
+  function getConsolidatedScore(studentId, subjectId) {
+    const scores = sourceExamObjs.map(src => {
+      const mk = marks.find(m => m.examId===src.id && m.studentId===studentId && m.subjectId===subjectId);
+      return mk ? mk.score : null;
+    }).filter(sc => sc !== null);
+    return scores.length ? parseFloat((scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1)) : null;
+  }
+
+  const scopeStudents = scopeStudentIds
+    ? students.filter(s => scopeStudentIds.includes(s.id))
+    : students;
+
   const rows = exam.subjectIds.map(sid => {
-    const sub      = subjects.find(s => s.id === sid); if (!sub) return '';
-    const subMarks = examMarks.filter(m => m.subjectId === sid);
-    if (!subMarks.length) return '';
-    const vals     = subMarks.map(m => m.score);
+    const sub = subjects.find(s => s.id === sid); if (!sub) return '';
+
+    let vals, maleVals, femaleVals;
+    if (isConsolidated && sourceExamObjs.length > 0) {
+      // Build per-student averaged scores for this subject
+      const studentScores = scopeStudents.map(stu => {
+        const avg = getConsolidatedScore(stu.id, sid);
+        return avg !== null ? { score: avg, gender: stu.gender } : null;
+      }).filter(Boolean);
+      if (!studentScores.length) return '';
+      vals       = studentScores.map(x => x.score);
+      maleVals   = studentScores.filter(x => x.gender === 'M').map(x => x.score);
+      femaleVals = studentScores.filter(x => x.gender === 'F').map(x => x.score);
+    } else {
+      const subMarks = examMarks.filter(m => m.subjectId === sid);
+      if (!subMarks.length) return '';
+      vals       = subMarks.map(m => m.score);
+      maleVals   = subMarks.filter(m => { const s=students.find(x=>x.id===m.studentId); return s && s.gender==='M'; }).map(m=>m.score);
+      femaleVals = subMarks.filter(m => { const s=students.find(x=>x.id===m.studentId); return s && s.gender==='F'; }).map(m=>m.score);
+    }
+
     const mn       = vals.reduce((a,b)=>a+b,0) / vals.length;
     const mx       = Math.max(...vals);
     const lo       = Math.min(...vals);
@@ -1680,14 +1712,11 @@ function buildSubjectAnalysisHTML(examId, scopeStudentIds) {
     // grade distribution counts
     const distCounts = {};
     gradeKeys.forEach(g => distCounts[g] = 0);
-    subMarks.forEach(m => {
-      const g = getGrade(m.score, sub.max);
+    vals.forEach(v => {
+      const g = getGrade(v, sub.max);
       if (distCounts[g.grade] !== undefined) distCounts[g.grade]++;
     });
 
-    // gender means
-    const maleVals   = subMarks.filter(m => { const s=students.find(x=>x.id===m.studentId); return s && s.gender==='M'; }).map(m=>m.score);
-    const femaleVals = subMarks.filter(m => { const s=students.find(x=>x.id===m.studentId); return s && s.gender==='F'; }).map(m=>m.score);
     const mMn = maleVals.length   ? (maleVals.reduce((a,b)=>a+b,0)/maleVals.length).toFixed(1)   : '—';
     const fMn = femaleVals.length ? (femaleVals.reduce((a,b)=>a+b,0)/femaleVals.length).toFixed(1) : '—';
 
@@ -2958,28 +2987,44 @@ function getStudentReport(stuId, examId) {
     }).filter(Boolean);
   }
 
-  const examMarks = marks.filter(m=>m.examId===examId&&m.studentId===stuId);
   total  = subjectRows.reduce((a,r)=>a+(r.score!==null?r.score:0),0);
   mean   = exam.subjectIds.length ? total/exam.subjectIds.length : 0;
   mGrade = getMeanGrade(mean/(subjectRows.reduce((a,r)=>a+(r.max||100),0)/exam.subjectIds.length||100)*8);
   totalPoints = subjectRows.reduce((a,r)=>a+(typeof r.points==='number'?r.points:0),0);
 
+  // Helper: compute a student's total for this exam (handles consolidated via averaging)
+  function getStudentExamTotal(sId) {
+    if (isConsolidated && sourceExamObjs.length > 0) {
+      let hasAny = false;
+      const t = exam.subjectIds.reduce((acc, sid) => {
+        const scores = sourceExamObjs.map(src => {
+          const mk = marks.find(m=>m.examId===src.id&&m.studentId===sId&&m.subjectId===sid);
+          return mk ? mk.score : null;
+        }).filter(sc=>sc!==null);
+        if (scores.length) hasAny = true;
+        return acc + (scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : 0);
+      }, 0);
+      return hasAny ? parseFloat(t.toFixed(1)) : 0;
+    }
+    return marks.filter(m=>m.examId===examId&&m.studentId===sId).reduce((a,m)=>a+m.score,0);
+  }
+
   // Rank: overall
   const allStudentTotals = students.map(s=>{
-    const tm=marks.filter(m=>m.examId===examId&&m.studentId===s.id).reduce((a,m)=>a+m.score,0);
-    return {id:s.id,total:tm};
+    const tm = getStudentExamTotal(s.id);
+    return {id:s.id, total:tm};
   }).filter(s=>s.total>0).sort((a,b)=>b.total-a.total);
   const overallRank = allStudentTotals.findIndex(s=>s.id===stuId)+1;
 
   // Stream rank
-  const streamStudents=students.filter(s=>s.streamId===stu.streamId).map(s=>{
-    const tm=marks.filter(m=>m.examId===examId&&m.studentId===s.id).reduce((a,m)=>a+m.score,0);
-    return {id:s.id,total:tm};
+  const streamStudents = students.filter(s=>s.streamId===stu.streamId).map(s=>{
+    const tm = getStudentExamTotal(s.id);
+    return {id:s.id, total:tm};
   }).filter(s=>s.total>0).sort((a,b)=>b.total-a.total);
   const streamRank = streamStudents.findIndex(s=>s.id===stuId)+1;
 
-  // Historical performance across all exams
-  const history = exams.map(ex => {
+  // Historical performance across all non-consolidated exams
+  const history = exams.filter(ex => ex.category !== 'consolidated').map(ex => {
     const exMarks = marks.filter(m=>m.examId===ex.id&&m.studentId===stuId);
     if (!exMarks.length) return null;
     const exTotal = exMarks.reduce((a,m)=>a+m.score,0);
@@ -8318,4 +8363,3 @@ async function ebTestApiKey() {
     else { const e = await res.json().catch(()=>({})); statusEl.innerHTML = `<span style="color:var(--danger)">❌ ${e.error?.message||'Invalid key'}</span>`; }
   } catch(err) { statusEl.innerHTML = `<span style="color:var(--danger)">❌ ${err.message}</span>`; }
 }
-
