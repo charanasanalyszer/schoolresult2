@@ -757,11 +757,14 @@
           <div class="fg"><label>Select Student</label>
             <select id="rpStudent" onchange="onRpStudentChange()"><option value="">— All Students —</option></select>
           </div>
-          <div class="fg"><label>Filter by Stream</label>
-            <select id="rpStream"><option value="">— All Streams —</option></select>
+          <div class="fg"><label>Filter by Class</label>
+            <select id="rpClass" onchange="onRpClassChange()"><option value="">— All Classes —</option></select>
           </div>
         </div>
         <div class="frow c3">
+          <div class="fg"><label>Filter by Stream</label>
+            <select id="rpStream"><option value="">— All Streams —</option></select>
+          </div>
           <div class="fg">
             <label>Term <span style="font-size:.75rem;color:#16a34a;font-weight:500">● Used for fee auto-link</span></label>
             <select id="rpTerm" onchange="onRpTermYearChange()">
